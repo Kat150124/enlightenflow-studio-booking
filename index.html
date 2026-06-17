@@ -431,6 +431,8 @@ async function submitBooking(){
   if(!selectedMembers.size){toast('請選擇至少一位借用人');return;}
   const date=document.getElementById('apply-date').value;
   if(!date){toast('請選擇日期');return;}
+  const todayStr=today();
+  if(date<todayStr){toast('不能申請過去的日期');return;}
   if(SS.end-SS.start<=0){toast('請調整借用時段');return;}
   const btn=document.getElementById('submit-btn');
   btn.disabled=true;btn.textContent='送出中…';
@@ -516,6 +518,16 @@ async function removeRoom(name){
 }
 
 (async()=>{await loadAll();renderCal();initSlider();})();
+setInterval(async()=>{
+  await loadAll();
+  const activeTab=document.querySelector('.tab.active');
+  if(activeTab){
+    const idx=[...document.querySelectorAll('.tab')].indexOf(activeTab);
+    const tabs=['calendar','apply','admin'];
+    if(idx===0)renderCal();
+    if(idx===2)renderAdmin();
+  }
+},30000);
 </script>
 </body>
 </html>
