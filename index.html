@@ -110,9 +110,9 @@ input.time-err{border-color:#E24B4A!important;background:#FCEBEB!important}
 <div class="container">
   <h1>🕺 舞蹈教室借用系統</h1>
   <div class="tabs">
-    <button class="tab active" onclick="switchTab('calendar')">📅 借用日曆</button>
-    <button class="tab" onclick="switchTab('apply')">✏️ 申請借用</button>
-    <button class="tab" onclick="switchTab('admin')">⚙️ 管理員</button>
+    <button class="tab active" onclick="switchTab('calendar')">📅 預約日曆</button>
+    <button class="tab" onclick="switchTab('apply')">✏️ 預約申請</button>
+    <button class="tab" onclick="switchTab('admin')">⚙️ 管理員專區</button>
   </div>
 
   <div id="panel-calendar" class="panel active">
@@ -132,7 +132,7 @@ input.time-err{border-color:#E24B4A!important;background:#FCEBEB!important}
     <div class="card">
       <h2>申請借用教室</h2>
       <div class="form-group">
-        <label>借用人（可多選）</label>
+        <label>培訓生（可多選）</label>
         <div class="member-chips" id="member-chips"><div class="loading">載入中…</div></div>
       </div>
       <div class="form-group">
@@ -172,22 +172,31 @@ input.time-err{border-color:#E24B4A!important;background:#FCEBEB!important}
         <input type="text" id="apply-note" placeholder="例：排練、拍作業、自主練習">
       </div>
       <button class="btn btn-primary" id="submit-btn" onclick="submitBooking()" style="width:100%;height:46px;font-size:1rem">送出申請</button>
-      <div class="notice">教室由管理員審核後分配，確認後才算完成借用。</div>
+      <div class="notice">教室由管理員審核後分配，確認後才算完成預約。</div>
+    </div>
+    <div class="card" style="margin-top:0">
+      <h2 style="margin-bottom:0.5rem">取消我的預約</h2>
+      <div style="font-size:0.85rem;color:var(--text2);margin-bottom:1rem">選擇培訓生，查看可取消的預約</div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label>選擇培訓生</label>
+        <select id="cancel-member" onchange="loadMyBookings()" style="max-width:220px"><option value="">— 選擇 —</option></select>
+      </div>
+      <div id="my-bookings"></div>
     </div>
   </div>
 
   <div id="panel-admin" class="panel">
-    <h2>申請審核</h2>
+    <h2>預約審核</h2>
     <div id="admin-bookings"><div class="loading">載入中…</div></div>
     <div style="margin-top:1.5rem">
       <div onclick="toggleSection('section-members')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:10px 0;border-top:0.5px solid var(--border)">
-        <span style="font-size:1rem;font-weight:600">借用人名單</span>
+        <span style="font-size:1rem;font-weight:600">培訓生名單</span>
         <span id="arrow-members" style="font-size:0.85rem;color:var(--text2);transition:transform .2s">▼</span>
       </div>
       <div id="section-members" style="display:none;margin-top:6px">
         <div class="card" style="margin-bottom:0">
           <div id="member-list"></div>
-          <div class="add-row"><input type="text" id="new-member" placeholder="新增姓名"><button class="btn btn-sm btn-success" onclick="addMember()">＋</button></div>
+          <div class="add-row"><input type="text" id="new-member" placeholder="新增培訓生"><button class="btn btn-sm btn-success" onclick="addMember()">＋</button></div>
         </div>
       </div>
       <div onclick="toggleSection('section-rooms')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:10px 0;border-top:0.5px solid var(--border);margin-top:4px">
@@ -317,7 +326,7 @@ function showDay(ds){
 function showBooking(id){
   const b=appData.bookings.find(x=>x.id===id);if(!b)return;
   document.getElementById('modal-title-text').textContent='借用詳情';
-  document.getElementById('modal-body').innerHTML='<div style="display:flex;flex-direction:column;gap:10px;font-size:0.95rem"><div><span style="color:var(--text2)">借用人：</span><strong>'+b.names.join('、')+'</strong></div><div><span style="color:var(--text2)">日期：</span>'+b.date+'</div><div><span style="color:var(--text2)">時段：</span>'+hrLabel(b.start)+' — '+hrLabel(b.end)+'</div><div><span style="color:var(--text2)">教室：</span>'+(b.room||'待分配')+'</div><div><span style="color:var(--text2)">狀態：</span><span class="badge badge-'+b.status+'">'+statusLabel(b.status)+'</span></div>'+(b.note?'<div><span style="color:var(--text2)">說明：</span>'+b.note+'</div>':'')+'</div>';
+  document.getElementById('modal-body').innerHTML='<div style="display:flex;flex-direction:column;gap:10px;font-size:0.95rem"><div><span style="color:var(--text2)">培訓生：</span><strong>'+b.names.join('、')+'</strong></div><div><span style="color:var(--text2)">日期：</span>'+b.date+'</div><div><span style="color:var(--text2)">時段：</span>'+hrLabel(b.start)+' — '+hrLabel(b.end)+'</div><div><span style="color:var(--text2)">教室：</span>'+(b.room||'待分配')+'</div><div><span style="color:var(--text2)">狀態：</span><span class="badge badge-'+b.status+'">'+statusLabel(b.status)+'</span></div>'+(b.note?'<div><span style="color:var(--text2)">說明：</span>'+b.note+'</div>':'')+'</div>';
   document.getElementById('detail-modal').classList.add('open');
 }
 function closeModal(e){if(!e||e.target===document.getElementById('detail-modal'))document.getElementById('detail-modal').classList.remove('open');}
@@ -328,6 +337,8 @@ function renderApplyForm(){
   document.getElementById('member-chips').innerHTML=appData.members.map(m=>'<div class="member-chip" onclick="toggleMember(this,\''+m+'\')">'+m+'</div>').join('');
   document.getElementById('join-group').style.display='none';
   document.getElementById('apply-date').value='';
+  const cancelSel=document.getElementById('cancel-member');
+  if(cancelSel){cancelSel.innerHTML='<option value="">— 選擇 —</option>'+appData.members.map(m=>'<option>'+m+'</option>').join('');document.getElementById('my-bookings').innerHTML='';}
   initSlider();
 }
 function toggleMember(el,name){
@@ -461,7 +472,7 @@ async function submitBooking(){
 
 // ── 管理員 ────────────────────────────────────────────
 function renderAdmin(){
-  document.getElementById('member-list').innerHTML=appData.members.map(m=>'<div class="list-item">'+m+'<button class="btn btn-sm btn-danger" onclick="removeMember(\''+m+'\')">刪</button></div>').join('')||'<div style="font-size:0.9rem;color:var(--text2);padding:4px">尚無成員</div>';
+  document.getElementById('member-list').innerHTML=appData.members.map(m=>'<div class="list-item">'+m+'<button class="btn btn-sm btn-danger" onclick="removeMember(\''+m+'\')">刪</button></div>').join('')||'<div style="font-size:0.9rem;color:var(--text2);padding:4px">尚無培訓生</div>';
   document.getElementById('room-list').innerHTML=appData.rooms.map(r=>'<div class="list-item">'+r+'<button class="btn btn-sm btn-danger" onclick="removeRoom(\''+r+'\')">刪</button></div>').join('')||'<div style="font-size:0.9rem;color:var(--text2);padding:4px">尚無教室</div>';
   const ab=document.getElementById('admin-bookings');
   const t=today();
@@ -472,10 +483,65 @@ function renderAdmin(){
     const roomOpts=appData.rooms.map(r=>'<option'+(b.room===r?' selected':'')+'>'+r+'</option>').join('');
     const sOpts=[...Array(MAX_H-MIN_H)].map((_,i)=>{const h=MIN_H+i;return'<option value="'+h+'"'+(h===b.start?' selected':'')+'>'+toHL(h)+'</option>';}).join('');
     const eOpts=[...Array(MAX_H-MIN_H)].map((_,i)=>{const h=MIN_H+i+1;return'<option value="'+h+'"'+(h===b.end?' selected':'')+'>'+toHL(h)+'</option>';}).join('');
-    return'<div class="booking-item"><div class="booking-meta"><strong>'+b.names.join('、')+'</strong><span class="badge badge-'+b.status+'">'+statusLabel(b.status)+'</span><span class="tag">'+b.date+'</span></div><div style="font-size:0.9rem;color:var(--text2);margin-bottom:8px">'+hrLabel(b.start)+' — '+hrLabel(b.end)+(b.note?' · '+b.note:'')+'</div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><select style="height:34px;font-size:0.85rem;width:auto" onchange="adminUpdateRoom(\''+b.id+'\',this.value)"><option value="">分配教室</option>'+roomOpts+'</select><select style="height:34px;font-size:0.85rem;width:80px" onchange="adminUpdateTime(\''+b.id+'\',\'start\',+this.value)">'+sOpts+'</select><span style="font-size:0.9rem;color:var(--text2)">→</span><select style="height:34px;font-size:0.85rem;width:80px" onchange="adminUpdateTime(\''+b.id+'\',\'end\',+this.value)">'+eOpts+'</select>'+(b.status==='pending'?'<button class="btn btn-sm btn-success" onclick="adminApprove(\''+b.id+'\')">✓ 確認</button><button class="btn btn-sm btn-danger" onclick="adminReject(\''+b.id+'\')">✗ 拒絕</button>':'<button class="btn btn-sm" onclick="adminReset(\''+b.id+'\')">改為待審</button>')+'<button class="btn btn-sm btn-danger" onclick="adminDelete(\''+b.id+'\')">刪除</button></div></div>';
+    return'<div class="booking-item"><div class="booking-meta"><strong>'+b.names.join('、')+'</strong><span class="badge badge-'+b.status+'">'+statusLabel(b.status)+'</span><span class="tag">'+b.date+'</span></div><div style="font-size:0.9rem;color:var(--text2);margin-bottom:8px">'+hrLabel(b.start)+' — '+hrLabel(b.end)+(b.note?' · '+b.note:'')+'</div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><select style="height:34px;font-size:0.85rem;width:auto" onchange="adminUpdateRoom(\''+b.id+'\',this.value)"><option value="">分配教室</option>'+roomOpts+'</select><select style="height:34px;font-size:0.85rem;width:80px" onchange="adminUpdateTime(\''+b.id+'\',\'start\',+this.value)">'+sOpts+'</select><span style="font-size:0.9rem;color:var(--text2)">→</span><select style="height:34px;font-size:0.85rem;width:80px" onchange="adminUpdateTime(\''+b.id+'\',\'end\',+this.value)">'+eOpts+'</select>'+(b.status==='pending'?'<button class="btn btn-sm btn-success" onclick="adminApprove(\''+b.id+'\')">✓ 確認</button><button class="btn btn-sm btn-danger" onclick="adminReject(\''+b.id+'\')">✗ 拒絕</button>':'<button class="btn btn-sm" onclick="adminReset(\''+b.id+'\')">改為待審</button>')+'<button class="btn btn-sm btn-danger" onclick="adminDelete(\''+b.id+'\')">刪除</button></div>'+
+      '<div style="margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border)">'+
+      '<div style="font-size:0.82rem;color:var(--text2);margin-bottom:6px">成員管理</div>'+
+      '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px">'+
+      b.names.map(n=>'<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px 3px 10px;background:var(--bg2);border-radius:20px;font-size:0.85rem;">'+n+'<button onclick="adminRemoveMember(\''+b.id+'\',\''+n+'\')" style="background:none;border:none;cursor:pointer;color:var(--text2);font-size:1rem;line-height:1;padding:0 2px">×</button></span>').join('')+
+      '</div>'+
+      '<select id="add-member-'+b.id+'" style="height:32px;font-size:0.85rem;width:auto;display:inline-block;margin-right:6px"><option value="">＋ 新增培訓生</option>'+
+      appData.members.filter(m=>!b.names.includes(m)).map(m=>'<option>'+m+'</option>').join('')+
+      '</select>'+
+      '<button class="btn btn-sm btn-success" onclick="adminAddMember(\''+b.id+'\')">加入</button>'+
+      '</div></div>';
   };
   ab.innerHTML=(active.length?active.map(renderBooking).join(''):'<div style="padding:1rem;color:var(--text2);font-size:0.95rem">目前無待處理申請</div>');
   ab.innerHTML+='<div style="margin-top:1rem"><div onclick="toggleSection(\'section-past\')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:10px 0;border-top:0.5px solid var(--border)"><span style="font-size:1rem;font-weight:600">過去預約紀錄 <span style="font-size:0.85rem;font-weight:400;color:var(--text2)">('+past.length+')</span></span><span id="arrow-past" style="font-size:0.85rem;color:var(--text2);transition:transform .2s">▼</span></div><div id="section-past" style="display:none;margin-top:6px">'+(past.length?past.map(renderBooking).join(''):'<div style="padding:1rem;color:var(--text2);font-size:0.95rem">無過去紀錄</div>')+'</div></div>';
+}
+
+// ── 取消預約 ──────────────────────────────────────────
+function loadMyBookings(){
+  const name=document.getElementById('cancel-member').value;
+  const el=document.getElementById('my-bookings');
+  if(!name){el.innerHTML='';return;}
+  const t=today();
+  const mine=appData.bookings.filter(b=>b.names.includes(name)&&b.date>=t&&b.status!=='rejected');
+  if(!mine.length){el.innerHTML='<div style="font-size:0.9rem;color:var(--text2);padding:8px 0">目前沒有可取消的預約</div>';return;}
+  el.innerHTML=mine.map(b=>'<div class="booking-item" style="margin-bottom:8px"><div class="booking-meta"><span class="badge badge-'+b.status+'">'+statusLabel(b.status)+'</span><span class="tag">'+b.date+'</span>'+(b.room?'<span class="tag tag-room">'+b.room+'</span>':'')+'</div><div style="font-size:0.9rem;color:var(--text2);margin-bottom:8px">'+hrLabel(b.start)+' — '+hrLabel(b.end)+(b.note?' · '+b.note:'')+'</div><div style="font-size:0.85rem;color:var(--text2);margin-bottom:8px">成員：'+b.names.join('、')+'</div><button class="btn btn-sm btn-danger" onclick="cancelMyBooking(\''+b.id+'\',\''+name+'\')">退出這筆預約</button></div>').join('');
+}
+async function cancelMyBooking(id, name){
+  const b=appData.bookings.find(x=>x.id===id);if(!b)return;
+  const ok=await showConfirm('確定要退出這筆預約？');if(!ok)return;
+  if(b.names.length<=1){
+    // last person, delete whole booking
+    await apiPost({action:'deleteBooking',id});
+    toast('已取消預約');
+  } else {
+    const newNames=b.names.filter(n=>n!==name);
+    await apiPost({action:'updateBooking',id,data:{names:newNames}});
+    toast('已退出預約');
+  }
+  await loadAll();
+  loadMyBookings();
+}
+
+// ── 管理員成員管理 ─────────────────────────────────────
+async function adminAddMember(id){
+  const sel=document.getElementById('add-member-'+id);
+  const name=sel.value;if(!name)return;
+  const b=appData.bookings.find(x=>x.id===id);if(!b)return;
+  if(b.names.includes(name)){toast('此培訓生已在名單中');return;}
+  const newNames=[...b.names,name];
+  await apiPost({action:'updateBooking',id,data:{names:newNames}});
+  await loadAll();renderAdmin();
+}
+async function adminRemoveMember(id,name){
+  const b=appData.bookings.find(x=>x.id===id);if(!b)return;
+  if(b.names.length<=1){toast('至少需要一位培訓生');return;}
+  const ok=await showConfirm('確定移除「'+name+'」？');if(!ok)return;
+  const newNames=b.names.filter(n=>n!==name);
+  await apiPost({action:'updateBooking',id,data:{names:newNames}});
+  await loadAll();renderAdmin();
 }
 
 async function adminUpdateRoom(id,room){await apiPost({action:'updateBooking',id,data:{room}});await loadAll();renderAdmin();}
