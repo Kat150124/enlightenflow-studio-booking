@@ -485,7 +485,11 @@ function renderAdmin(){
     const eOpts=[...Array(MAX_H-MIN_H)].map((_,i)=>{const h=MIN_H+i+1;return'<option value="'+h+'"'+(h===b.end?' selected':'')+'>'+toHL(h)+'</option>';}).join('');
     return'<div class="booking-item"><div class="booking-meta"><strong>'+b.names.join('、')+'</strong><span class="badge badge-'+b.status+'">'+statusLabel(b.status)+'</span><span class="tag">'+b.date+'</span></div><div style="font-size:0.9rem;color:var(--text2);margin-bottom:8px">'+hrLabel(b.start)+' — '+hrLabel(b.end)+(b.note?' · '+b.note:'')+'</div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><select style="height:34px;font-size:0.85rem;width:auto" onchange="adminUpdateRoom(\''+b.id+'\',this.value)"><option value="">分配教室</option>'+roomOpts+'</select><select style="height:34px;font-size:0.85rem;width:80px" onchange="adminUpdateTime(\''+b.id+'\',\'start\',+this.value)">'+sOpts+'</select><span style="font-size:0.9rem;color:var(--text2)">→</span><select style="height:34px;font-size:0.85rem;width:80px" onchange="adminUpdateTime(\''+b.id+'\',\'end\',+this.value)">'+eOpts+'</select>'+(b.status==='pending'?'<button class="btn btn-sm btn-success" onclick="adminApprove(\''+b.id+'\')">✓ 確認</button><button class="btn btn-sm btn-danger" onclick="adminReject(\''+b.id+'\')">✗ 拒絕</button>':'<button class="btn btn-sm" onclick="adminReset(\''+b.id+'\')">改為待審</button>')+'<button class="btn btn-sm btn-danger" onclick="adminDelete(\''+b.id+'\')">刪除</button></div>'+
       '<div style="margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border)">'+
-      '<div style="font-size:0.82rem;color:var(--text2);margin-bottom:6px">成員管理</div>'+
+      '<div onclick="toggleSection(\'section-mmgmt-'+b.id+'\')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:2px 0;margin-bottom:2px">'+
+      '<div style="font-size:0.82rem;color:var(--text2)">成員管理</div>'+
+      '<span id="arrow-mmgmt-'+b.id+'" style="font-size:0.75rem;color:var(--text2);transition:transform .2s">▼</span>'+
+      '</div>'+
+      '<div id="section-mmgmt-'+b.id+'" style="display:none;margin-top:6px">'+
       '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px">'+
       b.names.map(n=>'<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px 3px 10px;background:var(--bg2);border-radius:20px;font-size:0.85rem;">'+n+'<button onclick="adminRemoveMember(\''+b.id+'\',\''+n+'\')" style="background:none;border:none;cursor:pointer;color:var(--text2);font-size:1rem;line-height:1;padding:0 2px">×</button></span>').join('')+
       '</div>'+
@@ -493,6 +497,7 @@ function renderAdmin(){
       appData.members.filter(m=>!b.names.includes(m)).map(m=>'<option>'+m+'</option>').join('')+
       '</select>'+
       '<button class="btn btn-sm btn-success" onclick="adminAddMember(\''+b.id+'\')">加入</button>'+
+      '</div>'+
       '</div></div>';
   };
   ab.innerHTML=(active.length?active.map(renderBooking).join(''):'<div style="padding:1rem;color:var(--text2);font-size:0.95rem">目前無待處理申請</div>');
