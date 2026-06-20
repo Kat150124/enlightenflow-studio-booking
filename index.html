@@ -213,16 +213,6 @@ input.time-err{border-color:#E24B4A!important;background:#FCEBEB!important}
           <div class="add-row"><input type="text" id="new-member" placeholder="新增培訓生"><button class="btn btn-sm btn-success" onclick="addMember()">＋</button></div>
         </div>
       </div>
-      <div onclick="toggleSection('section-rooms')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:10px 0;border-top:0.5px solid var(--border);margin-top:4px">
-        <span style="font-size:1rem;font-weight:600">教室列表</span>
-        <span id="arrow-rooms" style="font-size:0.85rem;color:var(--text2);transition:transform .2s">▼</span>
-      </div>
-      <div id="section-rooms" style="display:none;margin-top:6px">
-        <div class="card" style="margin-bottom:0">
-          <div id="room-list"></div>
-          <div class="add-row"><input type="text" id="new-room" placeholder="新增教室"><button class="btn btn-sm btn-success" onclick="addRoom()">＋</button></div>
-        </div>
-      </div>
     </div>
   </div>
 </div>
@@ -494,6 +484,12 @@ async function submitBooking(){
   if(btn)btn.disabled=false;if(joinBtn)joinBtn.disabled=false;
 }
 
+const editingBookings=new Set();
+function toggleEdit(id){
+  if(editingBookings.has(id)) editingBookings.delete(id);
+  else editingBookings.add(id);
+  renderAdmin();
+}
 function renderAdmin(){
   document.getElementById('member-list').innerHTML=appData.members.map(m=>'<div class="list-item">'+m+'<button class="btn btn-sm btn-danger" onclick="removeMember(\''+m+'\')">刪</button></div>').join('')||'<div style="font-size:0.9rem;color:var(--text2);padding:4px">尚無培訓生</div>';
   document.getElementById('room-list').innerHTML=appData.rooms.map(r=>'<div class="list-item">'+r+'<button class="btn btn-sm btn-danger" onclick="removeRoom(\''+r+'\')">刪</button></div>').join('')||'<div style="font-size:0.9rem;color:var(--text2);padding:4px">尚無教室</div>';
@@ -506,7 +502,9 @@ function renderAdmin(){
     const roomOpts=appData.rooms.map(r=>'<option'+(b.room===r?' selected':'')+'>'+r+'</option>').join('');
     const sOpts=[...Array(MAX_H-MIN_H)].map((_,i)=>{const h=MIN_H+i;return'<option value="'+h+'"'+(h===b.start?' selected':'')+'>'+toHL(h)+'</option>';}).join('');
     const eOpts=[...Array(MAX_H-MIN_H)].map((_,i)=>{const h=MIN_H+i+1;return'<option value="'+h+'"'+(h===b.end?' selected':'')+'>'+toHL(h)+'</option>';}).join('');
-    return'<div class="booking-item"><div class="booking-meta"><strong>'+b.names.join('、')+'</strong><span class="badge badge-'+b.status+'">'+statusLabel(b.status)+'</span><span class="tag">'+b.date+'</span></div><div style="font-size:0.9rem;color:var(--text2);margin-bottom:8px">'+hrLabel(b.start)+' — '+hrLabel(b.end)+(b.note?' · '+b.note:'')+'</div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><select style="height:34px;font-size:0.85rem;width:auto" onchange="adminUpdateRoom(\''+b.id+'\',this.value)"><option value="">分配教室</option>'+roomOpts+'</select><select style="height:34px;font-size:0.85rem;width:80px" onchange="adminUpdateTime(\''+b.id+'\',\'start\',+this.value)">'+sOpts+'</select><span style="font-size:0.9rem;color:var(--text2)">→</span><select style="height:34px;font-size:0.85rem;width:80px" onchange="adminUpdateTime(\''+b.id+'\',\'end\',+this.value)">'+eOpts+'</select>'+(b.status==='pending'?'<button class="btn btn-sm btn-success" onclick="adminApprove(\''+b.id+'\')">✓ 確認</button><button class="btn btn-sm btn-danger" onclick="adminReject(\''+b.id+'\')">✗ 拒絕</button>':'<button class="btn btn-sm" onclick="adminReset(\''+b.id+'\')">改為待審</button>')+'<button class="btn btn-sm btn-danger" onclick="adminDelete(\''+b.id+'\')">刪除</button></div>'+
+    const isEdit=editingBookings.has(b.id);
+    const locked=!isEdit;
+    return'<div class="booking-item"><div class="booking-meta"><strong>'+b.names.join('、')+'</strong><span class="badge badge-'+b.status+'">'+statusLabel(b.status)+'</span><span class="tag">'+b.date+'</span></div><div style="font-size:0.9rem;color:var(--text2);margin-bottom:8px">'+hrLabel(b.start)+' — '+hrLabel(b.end)+(b.note?' · '+b.note:'')+'</div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><select style="height:34px;font-size:0.85rem;width:auto"'+(locked?' disabled':' onchange="adminUpdateRoom(\''+b.id+'\',this.value)"')+'><option value="">分配教室</option>'+roomOpts+'</select><select style="height:34px;font-size:0.85rem;width:80px"'+(locked?' disabled':' onchange="adminUpdateTime(\''+b.id+'\',\'start\',+this.value)"')+'>'+sOpts+'</select><span style="font-size:0.9rem;color:var(--text2)">→</span><select style="height:34px;font-size:0.85rem;width:80px"'+(locked?' disabled':' onchange="adminUpdateTime(\''+b.id+'\',\'end\',+this.value)"')+'>'+eOpts+'</select>'+(b.status==='pending'?'<button class="btn btn-sm btn-success" onclick="adminApprove(\''+b.id+'\')">✓ 確認</button><button class="btn btn-sm btn-danger" onclick="adminReject(\''+b.id+'\')">✗ 拒絕</button>':'<button class="btn btn-sm" style="border-color:#7a9cbf;color:#7a9cbf" onclick="toggleEdit(\''+b.id+'\')">'+( isEdit?'💾 儲存':'✏️ 修改')+'</button><button class="btn btn-sm" onclick="adminReset(\''+b.id+'\')">改為待審</button>')+'<button class="btn btn-sm btn-danger" onclick="adminDelete(\''+b.id+'\')">刪除</button></div>'+
       '<div style="margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border)">'+
       '<div onclick="toggleSection(\'section-mmgmt-'+b.id+'\')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:2px 0;margin-bottom:2px">'+
       '<div style="font-size:0.82rem;color:var(--text2)">成員管理</div>'+
