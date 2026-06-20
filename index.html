@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>🌱啟萌培訓生教室租借系統</title>
+<title>舞蹈教室借用系統</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -56,6 +56,7 @@ label{font-size:0.95rem;color:var(--text2);display:block;margin-bottom:8px;font-
 .day-event{font-size:0.7rem;padding:2px 4px;border-radius:4px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;font-weight:500}
 .ev-pending{background:var(--amber-bg);color:var(--amber-text)}
 .ev-confirmed{background:var(--green-bg);color:var(--green-text)}
+.ev-expired{background:#e0e0e0;color:#888;text-decoration:line-through}
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center;padding:1rem}
 .overlay.open{display:flex}
 .modal{background:var(--bg);border-radius:var(--radius-lg);padding:1.25rem;width:100%;max-width:420px;border:0.5px solid var(--border);max-height:90vh;overflow-y:auto}
@@ -108,7 +109,7 @@ input.time-err{border-color:#E24B4A!important;background:#FCEBEB!important}
 </head>
 <body>
 <div class="container">
-  <h1>🌱啟萌培訓生教室租借系統</h1>
+  <h1>🕺 舞蹈教室借用系統</h1>
   <div class="tabs">
     <button class="tab active" onclick="switchTab('calendar')">📅 預約日曆</button>
     <button class="tab" onclick="switchTab('apply')">✏️ 預約申請</button>
@@ -308,10 +309,15 @@ function renderCal(){
   for(let i=0;i<first;i++)html+='<div class="cal-day other-month"><div class="day-num">'+(prev-first+1+i)+'</div></div>';
   for(let dd=1;dd<=days;dd++){
     const ds=y+'-'+pad(m+1)+'-'+pad(dd),isT=ds===t;
+    const expired=ds<t;
     const evs=appData.bookings.filter(b=>b.date===ds);
-    let ev=evs.slice(0,3).map(b=>'<div class="day-event ev-'+b.status+'" onclick="showBooking(\''+b.id+'\');event.stopPropagation()">'+b.names[0]+(b.names.length>1?'+':'')+(b.room?' ·'+b.room:'')+'</div>').join('');
+    let ev=evs.slice(0,3).map(b=>{
+      const cls=expired?'ev-expired':'ev-'+b.status;
+      const label=toHL(b.start)+(b.room?' · '+b.room:'');
+      return '<div class="day-event '+cls+'" onclick="showBooking(\''+b.id+'\');event.stopPropagation()">'+label+'</div>';
+    }).join('');
     if(evs.length>3)ev+='<div style="font-size:0.65rem;color:var(--text2)">+'+(evs.length-3)+'</div>';
-    html+='<div class="cal-day'+(isT?' today':'')+'" onclick="showDay(\''+ds+'\')"><div class="day-num">'+dd+'</div>'+ev+'</div>';
+    html+='<div class="cal-day'+(isT?' today':'')+(expired?' style="background:var(--bg2)"':'')+'" onclick="showDay(\''+ds+'\')"><div class="day-num" style="'+(expired?'color:var(--text3)':'')+'">'+dd+'</div>'+ev+'</div>';
   }
   const rem=(7-(first+days)%7)%7;
   for(let i=1;i<=rem;i++)html+='<div class="cal-day other-month"><div class="day-num">'+i+'</div></div>';
