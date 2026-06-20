@@ -492,7 +492,6 @@ function toggleEdit(id){
 }
 function renderAdmin(){
   document.getElementById('member-list').innerHTML=appData.members.map(m=>'<div class="list-item">'+m+'<button class="btn btn-sm btn-danger" onclick="removeMember(\''+m+'\')">刪</button></div>').join('')||'<div style="font-size:0.9rem;color:var(--text2);padding:4px">尚無培訓生</div>';
-  document.getElementById('room-list').innerHTML=appData.rooms.map(r=>'<div class="list-item">'+r+'<button class="btn btn-sm btn-danger" onclick="removeRoom(\''+r+'\')">刪</button></div>').join('')||'<div style="font-size:0.9rem;color:var(--text2);padding:4px">尚無教室</div>';
   const ab=document.getElementById('admin-bookings');
   const t=today();
   const active=appData.bookings.filter(b=>b.date>=t);
