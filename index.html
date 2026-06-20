@@ -529,8 +529,9 @@ function renderAdmin(){
   const pastHtml=monthKeys.length?monthKeys.map(ym=>{
     const [yr,mo]=ym.split('-');
     const label=yr+'年'+parseInt(mo)+'月';
-    const mid='past-month-'+ym;
-    return'<div style="margin-bottom:8px"><div onclick="toggleSection(\''+mid+'\')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:6px 10px;background:var(--bg2);border-radius:var(--radius);margin-bottom:4px"><span style="font-size:0.9rem;font-weight:500">'+label+' <span style="font-weight:400;color:var(--text2)">('+pastByMonth[ym].length+')</span></span><span id="arrow-'+mid+'" style="font-size:0.75rem;color:var(--text2);transition:transform .2s">▼</span></div><div id="section-'+mid+'" style="display:none">'+pastByMonth[ym].map(renderBooking).join('')+'</div></div>';
+    const secId='section-pm-'+ym.replace('-','');
+    const arrId='arrow-pm-'+ym.replace('-','');
+    return'<div style="margin-bottom:8px"><div onclick="var el=document.getElementById(\''+secId+'\'),ar=document.getElementById(\''+arrId+'\'),op=el.style.display===\'none\';el.style.display=op?\'block\':\'none\';ar.style.transform=op?\'rotate(180deg)\':\'\';" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:6px 10px;background:var(--bg2);border-radius:var(--radius);margin-bottom:4px"><span style="font-size:0.9rem;font-weight:500">'+label+' <span style="font-weight:400;color:var(--text2)">('+pastByMonth[ym].length+')</span></span><span id="'+arrId+'" style="font-size:0.75rem;color:var(--text2);transition:transform .2s">▼</span></div><div id="'+secId+'" style="display:none">'+pastByMonth[ym].map(renderBooking).join('')+'</div></div>';
   }).join(''):'<div style="padding:1rem;color:var(--text2);font-size:0.95rem">無過去紀錄</div>';
   ab.innerHTML+='<div style="margin-top:1rem"><div onclick="toggleSection(\'section-past\')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:10px 0;border-top:0.5px solid var(--border)"><span style="font-size:1rem;font-weight:600">過去預約紀錄 <span style="font-size:0.85rem;font-weight:400;color:var(--text2)">('+past.length+')</span></span><span id="arrow-past" style="font-size:0.85rem;color:var(--text2);transition:transform .2s">▼</span></div><div id="section-past" style="display:none;margin-top:6px">'+pastHtml+'</div></div>';
 }
