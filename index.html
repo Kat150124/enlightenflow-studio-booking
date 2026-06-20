@@ -486,10 +486,11 @@ async function submitBooking(){
 
 function renderPastBooking(b){
   return'<div class="booking-item" style="padding:8px 14px;margin-bottom:6px">'+
-    '<div class="booking-meta"><strong>'+b.names.join('、')+'</strong>'+
-    (b.room?'<span class="tag tag-room">'+b.room+'</span>':'<span class="tag">未分配</span>')+
+    '<div style="font-weight:600;margin-bottom:4px">'+b.date+' ｜ '+b.names.join('、')+'</div>'+
+    '<div style="display:flex;align-items:center;gap:8px;font-size:0.9rem;color:var(--text2)">'+
+    hrLabel(b.start)+' — '+hrLabel(b.end)+
+    (b.room?'<span class="tag tag-room" style="margin-left:4px">'+b.room+'</span>':'<span class="tag" style="margin-left:4px">未分配</span>')+
     '</div>'+
-    '<div style="font-size:0.9rem;color:var(--text2)">'+hrLabel(b.start)+' — '+hrLabel(b.end)+'</div>'+
     '</div>';
 }
 const editingBookings=new Set();
@@ -513,7 +514,8 @@ function renderAdmin(){
     const locked=(b.status==='confirmed')&&!isEdit;
     const selStyle=locked?'height:34px;font-size:0.85rem;width:auto;opacity:0.4;cursor:not-allowed;background:var(--bg2)':'height:34px;font-size:0.85rem;width:auto';
     const selStyleTime=locked?'height:34px;font-size:0.85rem;width:80px;opacity:0.4;cursor:not-allowed;background:var(--bg2)':'height:34px;font-size:0.85rem;width:80px';
-    return'<div class="booking-item"><div class="booking-meta"><strong>'+b.date+' ｜ '+b.names.join('、')+'</strong><span class="badge badge-'+b.status+'">'+statusLabel(b.status)+'</span></div>      '<div style="margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border)">'+
+    return'<div class="booking-item"><div class="booking-meta"><strong>'+b.date+' ｜ '+b.names.join('、')+'</strong><span class="badge badge-'+b.status+'">'+statusLabel(b.status)+'</span></div><div style="font-size:0.9rem;color:var(--text2);margin-bottom:8px">'+hrLabel(b.start)+' — '+hrLabel(b.end)+(b.note?' · '+b.note:'')+'</div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><select style="'+selStyle+'"'+(locked?' disabled':' onchange="adminUpdateRoom(\''+b.id+'\',this.value)"')+'><option value="">分配教室</option>'+roomOpts+'</select><select style="'+selStyleTime+'"'+(locked?' disabled':' onchange="adminUpdateTime(\''+b.id+'\',\'start\',+this.value)"')+'>'+sOpts+'</select><span style="font-size:0.9rem;color:var(--text2)">→</span><select style="'+selStyleTime+'"'+(locked?' disabled':' onchange="adminUpdateTime(\''+b.id+'\',\'end\',+this.value)"')+'>'+eOpts+'</select>'+(b.status==='pending'?'<button class="btn btn-sm btn-success" onclick="adminApprove(\''+b.id+'\')">✓ 確認</button><button class="btn btn-sm btn-danger" onclick="adminReject(\''+b.id+'\')">✗ 拒絕</button>':'<button class="btn btn-sm" style="border-color:#7a9cbf;color:#7a9cbf" onclick="toggleEdit(\''+b.id+'\')">'+( isEdit?'💾 儲存':'✏️ 修改')+'</button><button class="btn btn-sm" onclick="adminReset(\''+b.id+'\')">改為待審</button>')+'<button class="btn btn-sm btn-danger" onclick="adminDelete(\''+b.id+'\')">刪除</button></div>'+
+      '<div style="margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border)">'+
       '<div onclick="toggleSection(\'section-mmgmt-'+b.id+'\')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:2px 0;margin-bottom:2px">'+
       '<div style="font-size:0.82rem;color:var(--text2)">成員管理</div>'+
       '<span id="arrow-mmgmt-'+b.id+'" style="font-size:0.75rem;color:var(--text2);transition:transform .2s">▼</span>'+
