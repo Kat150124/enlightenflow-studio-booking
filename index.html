@@ -86,7 +86,8 @@ label{font-size:0.95rem;color:var(--text2);display:block;margin-bottom:8px;font-
 .legend-dot{width:14px;height:14px;border-radius:3px}
 .join-opt{padding:10px 14px;border:0.5px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:all .15s;font-size:0.95rem}
 .join-opt:hover{background:var(--bg2)}
-.join-opt.selected{background:var(--bg2);border-color:var(--text)}
+.join-opt.selected{background:var(--text);color:var(--bg);border-color:var(--text)}
+.join-opt.selected div{color:var(--bg)!important}
 input.time-badge{outline:none;font-family:inherit;cursor:text;width:100%}
 input.time-badge:focus{border-color:var(--text);background:var(--bg);box-shadow:0 0 0 2px rgba(0,0,0,.1)}
 input.time-err{border-color:#E24B4A!important;background:#FCEBEB!important}
@@ -150,32 +151,37 @@ input.time-err{border-color:#E24B4A!important;background:#FCEBEB!important}
       <div class="form-group" id="join-group" style="display:none">
         <label>加入現有預約（選填）</label>
         <div id="join-options" style="display:flex;flex-direction:column;gap:8px"></div>
-        <div style="font-size:0.82rem;color:var(--text2);margin-top:6px">選擇後時段自動帶入，也可以不選、自行填寫新時段</div>
+        <div style="font-size:0.82rem;color:var(--text2);margin-top:6px">選擇後可直接加入，或不選、自行填寫新時段</div>
       </div>
-      <div class="form-group">
-        <label>借用時段</label>
-        <div class="slider-track" id="slider-track">
-          <div class="slider-bg"></div>
-          <div class="slider-fill" id="slider-fill"></div>
-          <div class="slider-thumb" id="thumb-start"></div>
-          <div class="slider-thumb" id="thumb-end"></div>
-        </div>
-        <div class="hour-marks" id="hour-marks"></div>
-        <div class="time-display">
-          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">
-            <div style="font-size:0.82rem;color:var(--text2)">開始</div>
-            <input class="time-badge" id="disp-start" type="text" maxlength="5" placeholder="08:00">
-          </div>
-          <span style="font-size:1rem;color:var(--text2);margin-top:20px">→</span>
-          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">
-            <div style="font-size:0.82rem;color:var(--text2)">結束</div>
-            <input class="time-badge" id="disp-end" type="text" maxlength="5" placeholder="10:00">
-          </div>
-        </div>
-        <div style="text-align:center;font-size:0.85rem;color:var(--text2);margin-top:8px" id="disp-dur">共 2 小時</div>
-        <div style="text-align:center;font-size:0.82rem;color:#A32D2D;margin-top:4px;min-height:16px" id="time-error"></div>
+      <div id="join-submit-section" style="display:none;margin-bottom:18px">
+        <button class="btn btn-primary" onclick="submitBooking()" style="width:100%;height:46px;font-size:1rem">加入這筆預約</button>
       </div>
-      <div class="form-group">
+      <div id="slider-section">
+        <div class="form-group">
+          <label>借用時段</label>
+          <div class="slider-track" id="slider-track">
+            <div class="slider-bg"></div>
+            <div class="slider-fill" id="slider-fill"></div>
+            <div class="slider-thumb" id="thumb-start"></div>
+            <div class="slider-thumb" id="thumb-end"></div>
+          </div>
+          <div class="hour-marks" id="hour-marks"></div>
+          <div class="time-display">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">
+              <div style="font-size:0.82rem;color:var(--text2)">開始</div>
+              <input class="time-badge" id="disp-start" type="text" maxlength="5" placeholder="08:00">
+            </div>
+            <span style="font-size:1rem;color:var(--text2);margin-top:20px">→</span>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">
+              <div style="font-size:0.82rem;color:var(--text2)">結束</div>
+              <input class="time-badge" id="disp-end" type="text" maxlength="5" placeholder="10:00">
+            </div>
+          </div>
+          <div style="text-align:center;font-size:0.85rem;color:var(--text2);margin-top:8px" id="disp-dur">共 2 小時</div>
+          <div style="text-align:center;font-size:0.82rem;color:#A32D2D;margin-top:4px;min-height:16px" id="time-error"></div>
+        </div>
+      </div>
+      <div class="form-group" id="note-section">
         <label>用途說明</label>
         <input type="text" id="apply-note" placeholder="例：排練、拍作業、自主練習">
       </div>
@@ -221,10 +227,8 @@ input.time-err{border-color:#E24B4A!important;background:#FCEBEB!important}
   </div>
 </div>
 
-<!-- Toast -->
 <div id="toast" style="display:none;position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:12px 22px;border-radius:12px;font-size:0.95rem;z-index:400;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.25);transition:opacity .3s"></div>
 
-<!-- 詳情 Modal -->
 <div class="overlay" id="detail-modal" onclick="closeModal(event)">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-title"><span id="modal-title-text"></span><button class="close-btn" onclick="closeModal()">×</button></div>
@@ -232,7 +236,6 @@ input.time-err{border-color:#E24B4A!important;background:#FCEBEB!important}
   </div>
 </div>
 
-<!-- Confirm Dialog -->
 <div class="overlay" id="confirm-overlay">
   <div class="dialog-box">
     <div class="dialog-msg" id="confirm-msg"></div>
@@ -244,10 +247,8 @@ input.time-err{border-color:#E24B4A!important;background:#FCEBEB!important}
 </div>
 
 <script>
-// ★ 把這裡換成你的 Apps Script 部署網址 ★
-const API = 'https://script.google.com/macros/s/AKfycbzbjkwrfwFsYElJVwbxjPSYsJinYT2O5XbLuo3ePfcDyR6DoxlpqcdWY_IC8xzkUxjp_g/exec';
+const API = 'https://script.google.com/macros/s/AKfycbwobW4pC0HcvpnRJXfOztTsQnM-X8zAKMZVv5ON9JE_4DPXDGHw_FB9U4ht7PyFr1aCGw/exec';
 
-// ── 通知與對話框 ──────────────────────────────────────
 function pad(n){return String(n).padStart(2,'0')}
 function today(){const d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
 function toHL(h){const hh=Math.floor(h),mm=(h-hh)>=0.5?'30':'00';return pad(hh)+':'+mm;}
@@ -262,7 +263,7 @@ function toast(msg,ms=2800){
 }
 
 let _confirmResolve=null;
-function showConfirm(msg, isDanger=true){
+function showConfirm(msg,isDanger=true){
   return new Promise(resolve=>{
     _confirmResolve=resolve;
     document.getElementById('confirm-msg').textContent=msg;
@@ -275,7 +276,6 @@ function closeConfirm(result){
   document.getElementById('confirm-overlay').classList.remove('open');
   if(_confirmResolve){_confirmResolve(result);_confirmResolve=null;}
 }
-
 function toggleSection(id){
   const el=document.getElementById(id),arrow=document.getElementById('arrow-'+id.replace('section-',''));
   const open=el.style.display==='none';
@@ -283,7 +283,6 @@ function toggleSection(id){
   arrow.style.transform=open?'rotate(180deg)':'';
 }
 
-// ── 狀態 ──────────────────────────────────────────────
 const MIN_H=8,MAX_H=23,STEP=0.5;
 let SS={start:12,end:14};
 let appData={members:[],rooms:[],bookings:[]};
@@ -295,7 +294,6 @@ async function apiFetch(p){const r=await fetch(API+'?'+new URLSearchParams(p));r
 async function apiPost(b){const r=await fetch(API,{method:'POST',body:JSON.stringify(b)});return r.json();}
 async function loadAll(){try{const d=await apiFetch({action:'getAll'});appData=d;}catch(e){console.error(e);}}
 
-// ── Tab ───────────────────────────────────────────────
 function switchTab(id){
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['calendar','apply','admin'][i]===id));
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
@@ -305,7 +303,6 @@ function switchTab(id){
   if(id==='admin')renderAdmin();
 }
 
-// ── 日曆 ──────────────────────────────────────────────
 function navCal(dir){calDate=new Date(calDate.getFullYear(),calDate.getMonth()+dir,1);renderCal();}
 function renderCal(){
   const t=today(),y=calDate.getFullYear(),m=calDate.getMonth();
@@ -347,13 +344,20 @@ function showBooking(id){
 }
 function closeModal(e){if(!e||e.target===document.getElementById('detail-modal'))document.getElementById('detail-modal').classList.remove('open');}
 
-// ── 申請 ──────────────────────────────────────────────
+function showApplySections(showSlider){
+  document.getElementById('slider-section').style.display=showSlider?'':'none';
+  document.getElementById('note-section').style.display=showSlider?'':'none';
+  document.getElementById('submit-btn').style.display=showSlider?'':'none';
+  document.getElementById('join-submit-section').style.display=showSlider?'none':'block';
+}
+
 function renderApplyForm(){
   selectedMembers=new Set();joinTarget=null;
   document.getElementById('member-chips').innerHTML=appData.members.map(m=>'<div class="member-chip" onclick="toggleMember(this,\''+m+'\')">'+m+'</div>').join('');
   document.getElementById('join-group').style.display='none';
   document.getElementById('apply-date').value='';
-   cancelSel=document.getElementById('cancel-member');
+  showApplySections(true);
+  const cancelSel=document.getElementById('cancel-member');
   if(cancelSel){cancelSel.innerHTML='<option value="">— 選擇 —</option>'+appData.members.map(m=>'<option>'+m+'</option>').join('');document.getElementById('my-bookings').innerHTML='';}
   initSlider();
 }
@@ -363,6 +367,7 @@ function toggleMember(el,name){
 }
 function onDateChange(){
   joinTarget=null;
+  showApplySections(true);
   const date=document.getElementById('apply-date').value;
   if(!date){document.getElementById('join-group').style.display='none';return;}
   const evs=appData.bookings.filter(b=>b.date===date&&b.status!=='rejected');
@@ -374,16 +379,18 @@ function selectJoin(id,el){
   if(joinTarget===id){
     joinTarget=null;
     document.querySelectorAll('.join-opt').forEach(x=>x.classList.remove('selected'));
-    SS={start:8,end:10};updateSliderUI();return;
+    SS={start:12,end:14};updateSliderUI();
+    showApplySections(true);
+    return;
   }
   joinTarget=id;
   document.querySelectorAll('.join-opt').forEach(x=>x.classList.remove('selected'));
   el.classList.add('selected');
   const b=appData.bookings.find(x=>x.id===id);
   if(b){SS.start=b.start;SS.end=b.end;updateSliderUI();}
+  showApplySections(false);
 }
 
-// ── 滑桿 ──────────────────────────────────────────────
 function snap(v){return Math.round(v/STEP)*STEP;}
 function initSlider(){
   document.getElementById('hour-marks').innerHTML=[8,10,12,14,16,18,20,22].map(h=>'<span class="hour-mark">'+pad(h)+':00</span>').join('');
@@ -453,16 +460,15 @@ function setupThumb(el,which){
 }
 window.addEventListener('resize',updateSliderUI);
 
-// ── 送出申請 ──────────────────────────────────────────
 async function submitBooking(){
-  if(!selectedMembers.size){toast('請選擇至少一位借用人');return;}
+  if(!selectedMembers.size){toast('請選擇至少一位培訓生');return;}
   const date=document.getElementById('apply-date').value;
   if(!date){toast('請選擇日期');return;}
   const todayStr=today();
   if(date<todayStr){toast('不能申請過去的日期');return;}
-  if(SS.end-SS.start<=0){toast('請調整借用時段');return;}
   const btn=document.getElementById('submit-btn');
-  btn.disabled=true;btn.textContent='送出中…';
+  const joinBtn=document.getElementById('join-submit-section').querySelector('button');
+  if(btn)btn.disabled=true;if(joinBtn)joinBtn.disabled=true;
   try{
     let res;
     if(joinTarget){
@@ -471,6 +477,7 @@ async function submitBooking(){
       res=await apiPost({action:'updateBooking',id:joinTarget,data:{names:newNames,_action:'join',_who:[...selectedMembers].join('、')}});
       if(res.ok)toast('已加入現有預約！');
     }else{
+      if(SS.end-SS.start<=0){toast('請調整借用時段');if(btn)btn.disabled=false;return;}
       res=await apiPost({action:'addBooking',data:{names:[...selectedMembers],date,start:SS.start,end:SS.end,note:document.getElementById('apply-note').value}});
       if(res.ok)toast('申請已送出！請等待管理員審核。');
     }
@@ -481,12 +488,12 @@ async function submitBooking(){
     selectedMembers=new Set();joinTarget=null;
     document.querySelectorAll('.member-chip').forEach(c=>c.classList.remove('selected'));
     document.getElementById('join-group').style.display='none';
-    SS={start:8,end:10};updateSliderUI();
+    showApplySections(true);
+    SS={start:12,end:14};updateSliderUI();
   }catch(e){toast('錯誤：'+e.message);}
-  btn.disabled=false;btn.textContent='送出申請';
+  if(btn)btn.disabled=false;if(joinBtn)joinBtn.disabled=false;
 }
 
-// ── 管理員 ────────────────────────────────────────────
 function renderAdmin(){
   document.getElementById('member-list').innerHTML=appData.members.map(m=>'<div class="list-item">'+m+'<button class="btn btn-sm btn-danger" onclick="removeMember(\''+m+'\')">刪</button></div>').join('')||'<div style="font-size:0.9rem;color:var(--text2);padding:4px">尚無培訓生</div>';
   document.getElementById('room-list').innerHTML=appData.rooms.map(r=>'<div class="list-item">'+r+'<button class="btn btn-sm btn-danger" onclick="removeRoom(\''+r+'\')">刪</button></div>').join('')||'<div style="font-size:0.9rem;color:var(--text2);padding:4px">尚無教室</div>';
@@ -520,7 +527,6 @@ function renderAdmin(){
   ab.innerHTML+='<div style="margin-top:1rem"><div onclick="toggleSection(\'section-past\')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:10px 0;border-top:0.5px solid var(--border)"><span style="font-size:1rem;font-weight:600">過去預約紀錄 <span style="font-size:0.85rem;font-weight:400;color:var(--text2)">('+past.length+')</span></span><span id="arrow-past" style="font-size:0.85rem;color:var(--text2);transition:transform .2s">▼</span></div><div id="section-past" style="display:none;margin-top:6px">'+(past.length?past.map(renderBooking).join(''):'<div style="padding:1rem;color:var(--text2);font-size:0.95rem">無過去紀錄</div>')+'</div></div>';
 }
 
-// ── 取消預約 ──────────────────────────────────────────
 function loadMyBookings(){
   const name=document.getElementById('cancel-member').value;
   const el=document.getElementById('my-bookings');
@@ -530,23 +536,20 @@ function loadMyBookings(){
   if(!mine.length){el.innerHTML='<div style="font-size:0.9rem;color:var(--text2);padding:8px 0">目前沒有可取消的預約</div>';return;}
   el.innerHTML=mine.map(b=>'<div class="booking-item" style="margin-bottom:8px"><div class="booking-meta"><span class="badge badge-'+b.status+'">'+statusLabel(b.status)+'</span><span class="tag">'+b.date+'</span>'+(b.room?'<span class="tag tag-room">'+b.room+'</span>':'')+'</div><div style="font-size:0.9rem;color:var(--text2);margin-bottom:8px">'+hrLabel(b.start)+' — '+hrLabel(b.end)+(b.note?' · '+b.note:'')+'</div><div style="font-size:0.85rem;color:var(--text2);margin-bottom:8px">成員：'+b.names.join('、')+'</div><button class="btn btn-sm btn-danger" onclick="cancelMyBooking(\''+b.id+'\',\''+name+'\')">退出這筆預約</button></div>').join('');
 }
-async function cancelMyBooking(id, name){
+async function cancelMyBooking(id,name){
   const b=appData.bookings.find(x=>x.id===id);if(!b)return;
   const ok=await showConfirm('確定要退出這筆預約？');if(!ok)return;
   if(b.names.length<=1){
-    // last person, delete whole booking
     await apiPost({action:'deleteBooking',id,notify:{_who:name}});
     toast('已取消預約');
-  } else {
+  }else{
     const newNames=b.names.filter(n=>n!==name);
     await apiPost({action:'updateBooking',id,data:{names:newNames,_action:'cancel',_who:name}});
     toast('已退出預約');
   }
-  await loadAll();
-  loadMyBookings();
+  await loadAll();loadMyBookings();
 }
 
-// ── 管理員成員管理 ─────────────────────────────────────
 async function adminAddMember(id){
   const sel=document.getElementById('add-member-'+id);
   const name=sel.value;if(!name)return;
@@ -564,7 +567,6 @@ async function adminRemoveMember(id,name){
   await apiPost({action:'updateBooking',id,data:{names:newNames}});
   await loadAll();renderAdmin();
 }
-
 async function adminUpdateRoom(id,room){await apiPost({action:'updateBooking',id,data:{room}});await loadAll();renderAdmin();}
 async function adminUpdateTime(id,which,val){
   const b=appData.bookings.find(x=>x.id===id);if(!b)return;
@@ -577,8 +579,7 @@ async function adminApprove(id){await apiPost({action:'updateBooking',id,data:{s
 async function adminReject(id){await apiPost({action:'updateBooking',id,data:{status:'rejected'}});await loadAll();renderAdmin();}
 async function adminReset(id){await apiPost({action:'updateBooking',id,data:{status:'pending'}});await loadAll();renderAdmin();}
 async function adminDelete(id){
-  const ok=await showConfirm('確定刪除這筆預約？');
-  if(!ok)return;
+  const ok=await showConfirm('確定刪除這筆預約？');if(!ok)return;
   await apiPost({action:'deleteBooking',id});await loadAll();renderAdmin();
 }
 async function addMember(){
@@ -588,8 +589,7 @@ async function addMember(){
   document.getElementById('new-member').value='';await loadAll();renderAdmin();
 }
 async function removeMember(name){
-  const ok=await showConfirm('確定移除「'+name+'」？');
-  if(!ok)return;
+  const ok=await showConfirm('確定移除「'+name+'」？');if(!ok)return;
   await apiPost({action:'deleteMember',name});await loadAll();renderAdmin();
 }
 async function addRoom(){
@@ -599,8 +599,7 @@ async function addRoom(){
   document.getElementById('new-room').value='';await loadAll();renderAdmin();
 }
 async function removeRoom(name){
-  const ok=await showConfirm('確定移除「'+name+'」？');
-  if(!ok)return;
+  const ok=await showConfirm('確定移除「'+name+'」？');if(!ok)return;
   await apiPost({action:'deleteRoom',name});await loadAll();renderAdmin();
 }
 
@@ -610,7 +609,6 @@ setInterval(async()=>{
   const activeTab=document.querySelector('.tab.active');
   if(activeTab){
     const idx=[...document.querySelectorAll('.tab')].indexOf(activeTab);
-    const tabs=['calendar','apply','admin'];
     if(idx===0)renderCal();
     if(idx===2)renderAdmin();
   }
