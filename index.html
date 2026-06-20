@@ -323,7 +323,7 @@ function renderCal(){
 function showDay(ds){
   const evs=appData.bookings.filter(b=>b.date===ds);if(!evs.length)return;
   document.getElementById('modal-title-text').textContent=ds.replace(/-/g,'/')+' 借用';
-  document.getElementById('modal-body').innerHTML=evs.map(b=>'<div class="booking-item"><div class="booking-meta"><strong>'+b.names.join('、')+'</strong><span class="badge badge-'+b.status+'">'+statusLabel(b.status)+'</span>'+(b.room?'<span class="tag tag-room">'+b.room+'</span>':'<span class="tag">待分配</span>')+'</div><div style="font-size:0.9rem;color:var(--text2)">'+hrLabel(b.start)+' — '+hrLabel(b.end)+'</div>'+(b.note?'<div style="font-size:0.9rem;margin-top:4px">'+b.note+'</div>':'')+'</div>').join('');
+  document.getElementById('modal-body').innerHTML=evs.map(b=>'<div class="booking-item"><div class="booking-meta"><strong>'+b.names.join('、')+'</strong><span class="badge badge-'+b.status+'">'+statusLabel(b.status)+'</span>'+(b.room?'<span class="tag tag-room">'+b.room+'</span>':'<span class="tag">未分配教室</span>')+'</div><div style="font-size:0.9rem;color:var(--text2)">'+hrLabel(b.start)+' — '+hrLabel(b.end)+'</div>'+(b.note?'<div style="font-size:0.9rem;margin-top:4px">'+b.note+'</div>':'')+'</div>').join('');
   document.getElementById('detail-modal').classList.add('open');
 }
 function showBooking(id){
