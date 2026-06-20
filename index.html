@@ -245,7 +245,7 @@ input.time-err{border-color:#E24B4A!important;background:#FCEBEB!important}
 
 <script>
 // ★ 把這裡換成你的 Apps Script 部署網址 ★
-const API = 'https://script.google.com/macros/s/AKfycbz44gb1MqAKAgrWokOOVtLlWx0pZMnI0L4_5WDSS8IkhOuGAUCjfq22PoLd7y3BO1Uhsg/exec';
+const API = 'https://script.google.com/macros/s/AKfycbyrzHGUGhVqvJLexEn2pWmdgin6W1dD97-wS4rFwt9mxlTOK8q85xOua0EYWum4V-7CqA/exec';
 
 // ── 通知與對話框 ──────────────────────────────────────
 function pad(n){return String(n).padStart(2,'0')}
@@ -353,7 +353,7 @@ function renderApplyForm(){
   document.getElementById('member-chips').innerHTML=appData.members.map(m=>'<div class="member-chip" onclick="toggleMember(this,\''+m+'\')">'+m+'</div>').join('');
   document.getElementById('join-group').style.display='none';
   document.getElementById('apply-date').value='';
-  const cancelSel=document.getElementById('cancel-member');
+   cancelSel=document.getElementById('cancel-member');
   if(cancelSel){cancelSel.innerHTML='<option value="">— 選擇 —</option>'+appData.members.map(m=>'<option>'+m+'</option>').join('');document.getElementById('my-bookings').innerHTML='';}
   initSlider();
 }
