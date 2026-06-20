@@ -535,7 +535,7 @@ async function cancelMyBooking(id, name){
   const ok=await showConfirm('確定要退出這筆預約？');if(!ok)return;
   if(b.names.length<=1){
     // last person, delete whole booking
-    await apiPost({action:'deleteBooking',id});
+    await apiPost({action:'deleteBooking',id,notify:{_who:name}});
     toast('已取消預約');
   } else {
     const newNames=b.names.filter(n=>n!==name);
