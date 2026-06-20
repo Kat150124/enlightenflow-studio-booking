@@ -468,7 +468,7 @@ async function submitBooking(){
     if(joinTarget){
       const b=appData.bookings.find(x=>x.id===joinTarget);
       const newNames=[...new Set([...b.names,...selectedMembers])];
-      res=await apiPost({action:'updateBooking',id:joinTarget,data:{names:newNames}});
+      res=await apiPost({action:'updateBooking',id:joinTarget,data:{names:newNames,_action:'join',_who:[...selectedMembers].join('、')}});
       if(res.ok)toast('已加入現有預約！');
     }else{
       res=await apiPost({action:'addBooking',data:{names:[...selectedMembers],date,start:SS.start,end:SS.end,note:document.getElementById('apply-note').value}});
@@ -539,7 +539,7 @@ async function cancelMyBooking(id, name){
     toast('已取消預約');
   } else {
     const newNames=b.names.filter(n=>n!==name);
-    await apiPost({action:'updateBooking',id,data:{names:newNames}});
+    await apiPost({action:'updateBooking',id,data:{names:newNames,_action:'cancel',_who:name}});
     toast('已退出預約');
   }
   await loadAll();
