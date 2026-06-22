@@ -337,7 +337,7 @@ function switchTab(id,skipHash){
 }
 function closeAdminLock(){
   document.getElementById('admin-lock').style.display='none';
-  switchTab('calendar',true);
+  history.back();
 }
 async function submitPw(){
   const pw=document.getElementById('pw-input').value;
