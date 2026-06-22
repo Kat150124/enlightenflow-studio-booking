@@ -220,7 +220,6 @@ input.time-err{border-color:#E24B4A!important;background:#FCEBEB!important}
   </div>
 </div>
 
-<!-- 密碼解鎖遮罩（蓋在管理員頁面上） -->
 <div id="admin-lock" style="display:none;position:fixed;inset:0;backdrop-filter:blur(12px) brightness(0.85);-webkit-backdrop-filter:blur(12px) brightness(0.85);background:rgba(240,239,233,.6);z-index:50;align-items:center;justify-content:center;padding:1rem">
   <div class="dialog-box" style="max-width:340px">
     <div style="font-size:1.05rem;font-weight:600;margin-bottom:4px">管理員專區</div>
@@ -234,7 +233,6 @@ input.time-err{border-color:#E24B4A!important;background:#FCEBEB!important}
   </div>
 </div>
 
-<!-- 修改密碼彈窗 -->
 <div class="overlay" id="changepw-overlay">
   <div class="dialog-box" style="max-width:340px;text-align:left">
     <div style="font-size:1.05rem;font-weight:600;margin-bottom:1rem">修改密碼</div>
@@ -252,6 +250,7 @@ input.time-err{border-color:#E24B4A!important;background:#FCEBEB!important}
     </div>
   </div>
 </div>
+
 <div id="toast" style="display:none;position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:12px 22px;border-radius:12px;font-size:0.95rem;z-index:400;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.25);transition:opacity .3s"></div>
 
 <div class="overlay" id="detail-modal" onclick="closeModal(event)">
@@ -272,7 +271,7 @@ input.time-err{border-color:#E24B4A!important;background:#FCEBEB!important}
 </div>
 
 <script>
-const API = 'https://script.google.com/macros/s/AKfycbzHSz2x94PkhAPSMhWEhwSc1_KAUXGlOx9GzTmJglDmfcmyNY7TuNKvirPFvcsei4fedA/exec';
+const API = 'https://script.google.com/macros/s/AKfycbwobW4pC0HcvpnRJXfOztTsQnM-X8zAKMZVv5ON9JE_4DPXDGHw_FB9U4ht7PyFr1aCGw/exec';
 
 function pad(n){return String(n).padStart(2,'0')}
 function today(){const d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
@@ -331,8 +330,7 @@ function switchTab(id){
     if(!adminUnlocked){
       document.getElementById('pw-input').value='';
       document.getElementById('pw-error').textContent='';
-      const lock=document.getElementById('admin-lock');
-      lock.style.display='flex';
+      document.getElementById('admin-lock').style.display='flex';
     }
   }
 }
@@ -413,19 +411,27 @@ function showBooking(id){
   const b=appData.bookings.find(x=>x.id===id);if(!b)return;
   const t=today();
   const canJoin=b.date>=t&&b.status!=='rejected';
+  const availableMembers=appData.members.filter(m=>!b.names.includes(m));
+  modalSelectedMembers.clear();
   document.getElementById('modal-title-text').textContent='借用詳情';
-  document.getElementById('modal-body').innerHTML=
-    '<div style="display:flex;flex-direction:column;gap:10px;font-size:0.95rem">'+
+  let body='<div style="display:flex;flex-direction:column;gap:10px;font-size:0.95rem">'+
     '<div><span style="color:var(--text2)">培訓生：</span><strong>'+b.names.join('、')+'</strong></div>'+
     '<div><span style="color:var(--text2)">日期：</span>'+b.date+'</div>'+
     '<div><span style="color:var(--text2)">時段：</span>'+hrLabel(b.start)+' — '+hrLabel(b.end)+'</div>'+
     '<div><span style="color:var(--text2)">教室：</span>'+(b.room||'待分配')+'</div>'+
     '<div><span style="color:var(--text2)">狀態：</span><span class="badge badge-'+b.status+'">'+statusLabel(b.status)+'</span></div>'+
-    (b.note?'<div><span style="color:var(--text2)">說明：</span>'+b.note+'</div>':'')+
-    (canJoin?'<div style="margin-top:6px;padding-top:10px;border-top:0.5px solid var(--border)"><div style="font-size:0.85rem;color:var(--text2);margin-bottom:8px">選擇要加入的培訓生</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px" id="modal-member-chips">'+
-    appData.members.filter(m=>!b.names.includes(m)).map(m=>'<div class="member-chip" onclick="toggleModalMember(this,''+m+'')">'+m+'</div>').join('')+
-    '</div><button class="btn btn-primary" style="width:100%" onclick="joinFromModal(''+b.id+'')">加入此預約</button></div>':'')+
-    '</div>';
+    (b.note?'<div><span style="color:var(--text2)">說明：</span>'+b.note+'</div>':'');
+  if(canJoin&&availableMembers.length>0){
+    body+='<div style="margin-top:6px;padding-top:10px;border-top:0.5px solid var(--border)">'+
+      '<div style="font-size:0.85rem;color:var(--text2);margin-bottom:8px">選擇要加入的培訓生</div>'+
+      '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px" id="modal-member-chips">'+
+      availableMembers.map(m=>'<div class="member-chip" onclick="toggleModalMember(this,\''+m+'\')">'+m+'</div>').join('')+
+      '</div>'+
+      '<button class="btn btn-primary" style="width:100%" onclick="joinFromModal(\''+b.id+'\')">加入此預約</button>'+
+      '</div>';
+  }
+  body+='</div>';
+  document.getElementById('modal-body').innerHTML=body;
   document.getElementById('detail-modal').classList.add('open');
 }
 const modalSelectedMembers=new Set();
@@ -608,7 +614,7 @@ function renderPastBooking(b){
 }
 const editingBookings=new Set();
 function toggleEdit(id){
-  if(editingBookings.has(id)) editingBookings.delete(id);
+  if(editingBookings.has(id))editingBookings.delete(id);
   else editingBookings.add(id);
   renderAdmin();
 }
@@ -665,7 +671,7 @@ function loadMyBookings(){
   const t=today();
   const mine=appData.bookings.filter(b=>b.names.includes(name)&&b.date>=t&&b.status!=='rejected');
   if(!mine.length){el.innerHTML='<div style="font-size:0.9rem;color:var(--text2);padding:8px 0">目前沒有可取消的預約</div>';return;}
-  el.innerHTML=mine.map(b=>'<div class="booking-item" style="margin-bottom:8px"><div class="booking-meta"><span class="badge badge-'+b.status+'">'+statusLabel(b.status)+'</span><span class="tag">'+b.date+'</span>'+(b.room?'<span class="tag tag-room">'+b.room+'</span>':'<span class="tag">待分配</span>')+'</div><div style="font-size:0.9rem;color:var(--text2);margin-bottom:8px">'+hrLabel(b.start)+' — '+hrLabel(b.end)+(b.note?' · '+b.note:'')+'</div><div style="font-size:0.85rem;color:var(--text2);margin-bottom:8px">成員：'+b.names.join('、')+'</div><button class="btn btn-sm btn-danger" onclick="cancelMyBooking(\''+b.id+'\',\''+name+'\')">退出這筆預約</button></div>').join('');
+  el.innerHTML=mine.map(b=>'<div class="booking-item" style="margin-bottom:8px"><div class="booking-meta"><span class="badge badge-'+b.status+'">'+statusLabel(b.status)+'</span><span class="tag">'+b.date+'</span>'+(b.room?'<span class="tag tag-room">'+b.room+'</span>':'')+'</div><div style="font-size:0.9rem;color:var(--text2);margin-bottom:8px">'+hrLabel(b.start)+' — '+hrLabel(b.end)+(b.note?' · '+b.note:'')+'</div><div style="font-size:0.85rem;color:var(--text2);margin-bottom:8px">成員：'+b.names.join('、')+'</div><button class="btn btn-sm btn-danger" onclick="cancelMyBooking(\''+b.id+'\',\''+name+'\')">退出這筆預約</button></div>').join('');
 }
 async function cancelMyBooking(id,name){
   const b=appData.bookings.find(x=>x.id===id);if(!b)return;
