@@ -423,7 +423,7 @@ function showBooking(id){
     (b.note?'<div><span style="color:var(--text2)">說明：</span>'+b.note+'</div>':'');
   if(canJoin&&availableMembers.length>0){
     body+='<div style="margin-top:6px;padding-top:10px;border-top:0.5px solid var(--border)">'+
-      '<button class="btn btn-primary" style="width:100%" onclick="openJoinModal(\''+b.id+'\',\''+b.date+' '+hrLabel(b.start)+'-'+hrLabel(b.end)+'\')">加入此預約</button>'+
+      '<button class="btn btn-primary" style="width:100%" onclick="confirmJoinFromModal(\''+b.id+'\')">加入此預約</button>'+
       '</div>';
   }
   body+='</div>';
