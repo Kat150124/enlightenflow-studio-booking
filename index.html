@@ -215,36 +215,40 @@ input.time-err{border-color:#E24B4A!important;background:#FCEBEB!important}
       </div>
     </div>
     <div style="margin-top:1.5rem;padding-top:1rem;border-top:0.5px solid var(--border)">
-      <div onclick="toggleSection('section-changepw')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:10px 0">
-        <span style="font-size:1rem;font-weight:600">修改密碼</span>
-        <span id="arrow-changepw" style="font-size:0.85rem;color:var(--text2);transition:transform .2s">▼</span>
-      </div>
-      <div id="section-changepw" style="display:none;margin-top:6px">
-        <div class="card" style="margin-bottom:0">
-          <div class="form-group" style="margin-bottom:10px">
-            <label>新密碼</label>
-            <input type="password" id="new-pw" placeholder="輸入新密碼" style="max-width:280px">
-          </div>
-          <div class="form-group" style="margin-bottom:10px">
-            <label>確認新密碼</label>
-            <input type="password" id="confirm-pw" placeholder="再次輸入新密碼" style="max-width:280px">
-          </div>
-          <button class="btn btn-primary" onclick="changePassword()">儲存新密碼</button>
-        </div>
-      </div>
+      <button class="btn" style="border-color:#7a9cbf;color:#7a9cbf" onclick="openChangePw()">🔑 修改密碼</button>
     </div>
   </div>
 </div>
 
-<div class="overlay" id="pw-overlay">
+<!-- 密碼解鎖遮罩（蓋在管理員頁面上） -->
+<div id="admin-lock" style="display:none;position:fixed;inset:0;background:rgba(240,239,233,.92);z-index:50;align-items:center;justify-content:center;padding:1rem">
   <div class="dialog-box" style="max-width:340px">
     <div style="font-size:1.05rem;font-weight:600;margin-bottom:4px">管理員專區</div>
     <div style="font-size:0.85rem;color:var(--text2);margin-bottom:1rem">請輸入密碼</div>
     <input type="password" id="pw-input" placeholder="密碼" style="height:42px;padding:0 12px;border:0.5px solid var(--border2);border-radius:var(--radius);font-size:1rem;background:var(--bg);color:var(--text);outline:none;width:100%;margin-bottom:10px" onkeydown="if(event.key==='Enter')submitPw()">
     <div id="pw-error" style="font-size:0.82rem;color:#A32D2D;min-height:16px;margin-bottom:10px"></div>
     <div style="display:flex;gap:10px">
-      <button class="btn" style="flex:1" onclick="closePwOverlay()">取消</button>
-      <button class="btn btn-primary" style="flex:1" onclick="submitPw()">進入</button>
+      <button class="btn" style="flex:1" onclick="closeAdminLock()">取消</button>
+      <button class="btn btn-primary" id="pw-submit-btn" style="flex:1" onclick="submitPw()">進入</button>
+    </div>
+  </div>
+</div>
+
+<!-- 修改密碼彈窗 -->
+<div class="overlay" id="changepw-overlay">
+  <div class="dialog-box" style="max-width:340px;text-align:left">
+    <div style="font-size:1.05rem;font-weight:600;margin-bottom:1rem">修改密碼</div>
+    <div class="form-group" style="margin-bottom:10px">
+      <label>新密碼</label>
+      <input type="password" id="new-pw" placeholder="輸入新密碼">
+    </div>
+    <div class="form-group" style="margin-bottom:14px">
+      <label>確認新密碼</label>
+      <input type="password" id="confirm-pw" placeholder="再次輸入新密碼">
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn" style="flex:1" onclick="document.getElementById('changepw-overlay').classList.remove('open')">取消</button>
+      <button class="btn btn-primary" style="flex:1" onclick="changePassword()">儲存</button>
     </div>
   </div>
 </div>
@@ -268,7 +272,7 @@ input.time-err{border-color:#E24B4A!important;background:#FCEBEB!important}
 </div>
 
 <script>
-const API = 'https://script.google.com/macros/s/AKfycbzhMVKBOcHcC3HqKgEdtu9FIQmvHT1SItBtJYgYco864zGpv6rSqu0MrSzAqSL9OBakFA/exec';
+const API = 'https://script.google.com/macros/s/AKfycbwobW4pC0HcvpnRJXfOztTsQnM-X8zAKMZVv5ON9JE_4DPXDGHw_FB9U4ht7PyFr1aCGw/exec';
 
 function pad(n){return String(n).padStart(2,'0')}
 function today(){const d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
@@ -317,42 +321,45 @@ async function loadAll(){try{const d=await apiFetch({action:'getAll'});appData=d
 
 let adminUnlocked=false;
 function switchTab(id){
-  if(id==='admin'&&!adminUnlocked){
-    pendingTab='admin';
-    document.getElementById('pw-input').value='';
-    document.getElementById('pw-error').textContent='';
-    document.getElementById('pw-overlay').classList.add('open');
-    return;
-  }
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['calendar','apply','admin'][i]===id));
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+id).classList.add('active');
   if(id==='calendar')renderCal();
   if(id==='apply')renderApplyForm();
-  if(id==='admin')renderAdmin();
+  if(id==='admin'){
+    renderAdmin();
+    if(!adminUnlocked){
+      document.getElementById('pw-input').value='';
+      document.getElementById('pw-error').textContent='';
+      const lock=document.getElementById('admin-lock');
+      lock.style.display='flex';
+    }
+  }
 }
-let pendingTab=null;
-function closePwOverlay(){
-  document.getElementById('pw-overlay').classList.remove('open');
-  pendingTab=null;
+function closeAdminLock(){
+  document.getElementById('admin-lock').style.display='none';
+  switchTab('calendar');
 }
 async function submitPw(){
   const pw=document.getElementById('pw-input').value;
   if(!pw){document.getElementById('pw-error').textContent='請輸入密碼';return;}
-  const btn=document.querySelector('#pw-overlay .btn-primary');
+  const btn=document.getElementById('pw-submit-btn');
   btn.disabled=true;btn.textContent='驗證中…';
   try{
     const res=await apiFetch({action:'verifyPassword',pw});
     if(res.ok){
       adminUnlocked=true;
-      document.getElementById('pw-overlay').classList.remove('open');
-      if(pendingTab)switchTab(pendingTab);
-      pendingTab=null;
+      document.getElementById('admin-lock').style.display='none';
     }else{
       document.getElementById('pw-error').textContent='密碼錯誤';
     }
   }catch(e){document.getElementById('pw-error').textContent='錯誤：'+e.message;}
   btn.disabled=false;btn.textContent='進入';
+}
+function openChangePw(){
+  document.getElementById('new-pw').value='';
+  document.getElementById('confirm-pw').value='';
+  document.getElementById('changepw-overlay').classList.add('open');
 }
 async function changePassword(){
   const np=document.getElementById('new-pw').value;
@@ -363,9 +370,7 @@ async function changePassword(){
   const res=await apiPost({action:'changePassword',pw:np});
   if(res.ok){
     toast('密碼已更新！');
-    document.getElementById('new-pw').value='';
-    document.getElementById('confirm-pw').value='';
-    toggleSection('section-changepw');
+    document.getElementById('changepw-overlay').classList.remove('open');
   }else{
     toast('更新失敗：'+(res.error||''));
   }
