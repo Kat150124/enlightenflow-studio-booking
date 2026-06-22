@@ -221,7 +221,7 @@ input.time-err{border-color:#E24B4A!important;background:#FCEBEB!important}
 </div>
 
 <!-- 密碼解鎖遮罩（蓋在管理員頁面上） -->
-<div id="admin-lock" style="display:none;position:fixed;inset:0;background:rgba(240,239,233,.92);z-index:50;align-items:center;justify-content:center;padding:1rem">
+<div id="admin-lock" style="display:none;position:fixed;inset:0;backdrop-filter:blur(12px) brightness(0.85);-webkit-backdrop-filter:blur(12px) brightness(0.85);background:rgba(240,239,233,.6);z-index:50;align-items:center;justify-content:center;padding:1rem">
   <div class="dialog-box" style="max-width:340px">
     <div style="font-size:1.05rem;font-weight:600;margin-bottom:4px">管理員專區</div>
     <div style="font-size:0.85rem;color:var(--text2);margin-bottom:1rem">請輸入密碼</div>
@@ -411,11 +411,41 @@ function showDay(ds){
 }
 function showBooking(id){
   const b=appData.bookings.find(x=>x.id===id);if(!b)return;
+  const t=today();
+  const canJoin=b.date>=t&&b.status!=='rejected';
   document.getElementById('modal-title-text').textContent='借用詳情';
-  document.getElementById('modal-body').innerHTML='<div style="display:flex;flex-direction:column;gap:10px;font-size:0.95rem"><div><span style="color:var(--text2)">培訓生：</span><strong>'+b.names.join('、')+'</strong></div><div><span style="color:var(--text2)">日期：</span>'+b.date+'</div><div><span style="color:var(--text2)">時段：</span>'+hrLabel(b.start)+' — '+hrLabel(b.end)+'</div><div><span style="color:var(--text2)">教室：</span>'+(b.room||'待分配')+'</div><div><span style="color:var(--text2)">狀態：</span><span class="badge badge-'+b.status+'">'+statusLabel(b.status)+'</span></div>'+(b.note?'<div><span style="color:var(--text2)">說明：</span>'+b.note+'</div>':'')+'</div>';
+  document.getElementById('modal-body').innerHTML=
+    '<div style="display:flex;flex-direction:column;gap:10px;font-size:0.95rem">'+
+    '<div><span style="color:var(--text2)">培訓生：</span><strong>'+b.names.join('、')+'</strong></div>'+
+    '<div><span style="color:var(--text2)">日期：</span>'+b.date+'</div>'+
+    '<div><span style="color:var(--text2)">時段：</span>'+hrLabel(b.start)+' — '+hrLabel(b.end)+'</div>'+
+    '<div><span style="color:var(--text2)">教室：</span>'+(b.room||'待分配')+'</div>'+
+    '<div><span style="color:var(--text2)">狀態：</span><span class="badge badge-'+b.status+'">'+statusLabel(b.status)+'</span></div>'+
+    (b.note?'<div><span style="color:var(--text2)">說明：</span>'+b.note+'</div>':'')+
+    (canJoin?'<div style="margin-top:6px;padding-top:10px;border-top:0.5px solid var(--border)"><div style="font-size:0.85rem;color:var(--text2);margin-bottom:8px">選擇要加入的培訓生</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px" id="modal-member-chips">'+
+    appData.members.filter(m=>!b.names.includes(m)).map(m=>'<div class="member-chip" onclick="toggleModalMember(this,''+m+'')">'+m+'</div>').join('')+
+    '</div><button class="btn btn-primary" style="width:100%" onclick="joinFromModal(''+b.id+'')">加入此預約</button></div>':'')+
+    '</div>';
   document.getElementById('detail-modal').classList.add('open');
 }
-function closeModal(e){if(!e||e.target===document.getElementById('detail-modal'))document.getElementById('detail-modal').classList.remove('open');}
+const modalSelectedMembers=new Set();
+function toggleModalMember(el,name){
+  if(modalSelectedMembers.has(name)){modalSelectedMembers.delete(name);el.classList.remove('selected');}
+  else{modalSelectedMembers.add(name);el.classList.add('selected');}
+}
+async function joinFromModal(id){
+  if(!modalSelectedMembers.size){toast('請選擇要加入的培訓生');return;}
+  const b=appData.bookings.find(x=>x.id===id);if(!b)return;
+  const newNames=[...new Set([...b.names,...modalSelectedMembers])];
+  const res=await apiPost({action:'updateBooking',id,data:{names:newNames,_action:'join',_who:[...modalSelectedMembers].join('、')}});
+  if(res.error){toast('錯誤：'+res.error);return;}
+  modalSelectedMembers.clear();
+  await loadAll();
+  toast('已加入預約！');
+  document.getElementById('detail-modal').classList.remove('open');
+  renderCal();
+}
+function closeModal(e){if(!e||e.target===document.getElementById('detail-modal')){document.getElementById('detail-modal').classList.remove('open');modalSelectedMembers.clear();}}
 
 function showApplySections(showSlider){
   document.getElementById('slider-section').style.display=showSlider?'':'none';
