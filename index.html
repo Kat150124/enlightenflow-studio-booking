@@ -319,7 +319,8 @@ async function apiPost(b){const r=await fetch(API,{method:'POST',body:JSON.strin
 async function loadAll(){try{const d=await apiFetch({action:'getAll'});appData=d;}catch(e){console.error(e);}}
 
 let adminUnlocked=false;
-function switchTab(id){
+function switchTab(id,skipHash){
+  if(!skipHash)location.hash=id;
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['calendar','apply','admin'][i]===id));
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+id).classList.add('active');
@@ -336,7 +337,7 @@ function switchTab(id){
 }
 function closeAdminLock(){
   document.getElementById('admin-lock').style.display='none';
-  switchTab('calendar');
+  switchTab('calendar',true);
 }
 async function submitPw(){
   const pw=document.getElementById('pw-input').value;
@@ -758,7 +759,20 @@ async function removeRoom(name){
   await apiPost({action:'deleteRoom',name});await loadAll();renderAdmin();
 }
 
-(async()=>{await loadAll();renderCal();initSlider();})();
+(async()=>{
+  await loadAll();
+  const initTab=(location.hash.replace('#','')||'calendar');
+  if(['calendar','apply','admin'].includes(initTab)){
+    switchTab(initTab,true);
+  } else {
+    renderCal();
+  }
+  initSlider();
+  window.addEventListener('hashchange',()=>{
+    const tab=location.hash.replace('#','')||'calendar';
+    if(['calendar','apply','admin'].includes(tab))switchTab(tab,true);
+  });
+})();
 setInterval(async()=>{
   await loadAll();
   const activeTab=document.querySelector('.tab.active');
