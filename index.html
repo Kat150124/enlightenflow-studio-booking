@@ -251,6 +251,19 @@ input.time-err{border-color:#E24B4A!important;background:#FCEBEB!important}
   </div>
 </div>
 
+<!-- 加入預約選人彈窗 -->
+<div class="overlay" id="join-modal">
+  <div class="dialog-box" style="max-width:360px;text-align:left">
+    <div style="font-size:1.05rem;font-weight:600;margin-bottom:0.5rem">加入此預約</div>
+    <div style="font-size:0.85rem;color:var(--text2);margin-bottom:1rem" id="join-modal-info"></div>
+    <div style="font-size:0.85rem;color:var(--text2);margin-bottom:8px">選擇要加入的培訓生</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:1rem" id="join-modal-chips"></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn" style="flex:1" onclick="document.getElementById('join-modal').classList.remove('open');modalSelectedMembers.clear()">取消</button>
+      <button class="btn btn-primary" style="flex:1" onclick="confirmJoinFromModal()">確認加入</button>
+    </div>
+  </div>
+</div>
 <div id="toast" style="display:none;position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:12px 22px;border-radius:12px;font-size:0.95rem;z-index:400;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.25);transition:opacity .3s"></div>
 
 <div class="overlay" id="detail-modal" onclick="closeModal(event)">
@@ -271,7 +284,7 @@ input.time-err{border-color:#E24B4A!important;background:#FCEBEB!important}
 </div>
 
 <script>
-const API = 'https://script.google.com/macros/s/AKfycbzHSz2x94PkhAPSMhWEhwSc1_KAUXGlOx9GzTmJglDmfcmyNY7TuNKvirPFvcsei4fedA/exec';
+const API = 'https://script.google.com/macros/s/AKfycbwobW4pC0HcvpnRJXfOztTsQnM-X8zAKMZVv5ON9JE_4DPXDGHw_FB9U4ht7PyFr1aCGw/exec';
 
 function pad(n){return String(n).padStart(2,'0')}
 function today(){const d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
@@ -423,11 +436,7 @@ function showBooking(id){
     (b.note?'<div><span style="color:var(--text2)">說明：</span>'+b.note+'</div>':'');
   if(canJoin&&availableMembers.length>0){
     body+='<div style="margin-top:6px;padding-top:10px;border-top:0.5px solid var(--border)">'+
-      '<div style="font-size:0.85rem;color:var(--text2);margin-bottom:8px">選擇要加入的培訓生</div>'+
-      '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px" id="modal-member-chips">'+
-      availableMembers.map(m=>'<div class="member-chip" onclick="toggleModalMember(this,\''+m+'\')">'+m+'</div>').join('')+
-      '</div>'+
-      '<button class="btn btn-primary" style="width:100%" onclick="joinFromModal(\''+b.id+'\')">加入此預約</button>'+
+      '<button class="btn btn-primary" style="width:100%" onclick="openJoinModal(\''+b.id+'\',\''+b.date+' '+hrLabel(b.start)+'-'+hrLabel(b.end)+'\')">加入此預約</button>'+
       '</div>';
   }
   body+='</div>';
@@ -435,20 +444,32 @@ function showBooking(id){
   document.getElementById('detail-modal').classList.add('open');
 }
 const modalSelectedMembers=new Set();
+let joinModalBookingId=null;
 function toggleModalMember(el,name){
   if(modalSelectedMembers.has(name)){modalSelectedMembers.delete(name);el.classList.remove('selected');}
   else{modalSelectedMembers.add(name);el.classList.add('selected');}
 }
-async function joinFromModal(id){
-  if(!modalSelectedMembers.size){toast('請選擇要加入的培訓生');return;}
+function openJoinModal(id,info){
+  joinModalBookingId=id;
+  modalSelectedMembers.clear();
+  const b=appData.bookings.find(x=>x.id===id);if(!b)return;
+  const available=appData.members.filter(m=>!b.names.includes(m));
+  document.getElementById('join-modal-info').textContent=info;
+  document.getElementById('join-modal-chips').innerHTML=available.map(m=>'<div class="member-chip" onclick="toggleModalMember(this,\''+m+'\')">'+m+'</div>').join('');
+  document.getElementById('join-modal').classList.add('open');
+}
+async function confirmJoinFromModal(){
+  if(!modalSelectedMembers.size){toast('請選擇至少一位培訓生');return;}
+  const id=joinModalBookingId;
   const b=appData.bookings.find(x=>x.id===id);if(!b)return;
   const newNames=[...new Set([...b.names,...modalSelectedMembers])];
   const res=await apiPost({action:'updateBooking',id,data:{names:newNames,_action:'join',_who:[...modalSelectedMembers].join('、')}});
   if(res.error){toast('錯誤：'+res.error);return;}
   modalSelectedMembers.clear();
+  document.getElementById('join-modal').classList.remove('open');
+  document.getElementById('detail-modal').classList.remove('open');
   await loadAll();
   toast('已加入預約！');
-  document.getElementById('detail-modal').classList.remove('open');
   renderCal();
 }
 function closeModal(e){if(!e||e.target===document.getElementById('detail-modal')){document.getElementById('detail-modal').classList.remove('open');modalSelectedMembers.clear();}}
