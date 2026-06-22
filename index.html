@@ -422,8 +422,18 @@ function showBooking(id){
     '<div><span style="color:var(--text2)">狀態：</span><span class="badge badge-'+b.status+'">'+statusLabel(b.status)+'</span></div>'+
     (b.note?'<div><span style="color:var(--text2)">說明：</span>'+b.note+'</div>':'');
   if(canJoin&&availableMembers.length>0){
-    body+='<div style="margin-top:6px;padding-top:10px;border-top:0.5px solid var(--border)">'+
-      '<button class="btn btn-primary" style="width:100%" onclick="confirmJoinFromModal(\''+b.id+'\')">加入此預約</button>'+
+    body+='<div id="join-section-'+b.id+'" style="margin-top:6px;padding-top:10px;border-top:0.5px solid var(--border)">'+
+      '<button class="btn btn-primary" style="width:100%" onclick="showJoinPicker(\''+b.id+'\')">加入此預約</button>'+
+      '</div>'+
+      '<div id="join-picker-'+b.id+'" style="display:none;margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border)">'+
+      '<div style="font-size:0.85rem;color:var(--text2);margin-bottom:8px">選擇要加入的培訓生</div>'+
+      '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">'+
+      availableMembers.map(m=>'<div class="member-chip" onclick="toggleModalMember(this,\''+m+'\')">'+m+'</div>').join('')+
+      '</div>'+
+      '<div style="display:flex;gap:8px">'+
+      '<button class="btn" style="flex:1" onclick="hideJoinPicker(\''+b.id+'\')">取消</button>'+
+      '<button class="btn btn-primary" style="flex:1" onclick="confirmJoinFromModal(\''+b.id+'\')">確認加入</button>'+
+      '</div>'+
       '</div>';
   }
   body+='</div>';
@@ -436,6 +446,17 @@ function toggleModalMember(el,name){
   else{modalSelectedMembers.add(name);el.classList.add('selected');}
 }
 
+function showJoinPicker(id){
+  modalSelectedMembers.clear();
+  document.getElementById('join-section-'+id).style.display='none';
+  document.getElementById('join-picker-'+id).style.display='block';
+  document.querySelectorAll('#join-picker-'+id+' .member-chip').forEach(c=>c.classList.remove('selected'));
+}
+function hideJoinPicker(id){
+  modalSelectedMembers.clear();
+  document.getElementById('join-picker-'+id).style.display='none';
+  document.getElementById('join-section-'+id).style.display='block';
+}
 async function confirmJoinFromModal(id){
   if(!modalSelectedMembers.size){toast('請選擇至少一位培訓生');return;}
   const b=appData.bookings.find(x=>x.id===id);if(!b)return;
