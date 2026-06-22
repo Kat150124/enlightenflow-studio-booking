@@ -214,9 +214,40 @@ input.time-err{border-color:#E24B4A!important;background:#FCEBEB!important}
         </div>
       </div>
     </div>
+    <div style="margin-top:1.5rem;padding-top:1rem;border-top:0.5px solid var(--border)">
+      <div onclick="toggleSection('section-changepw')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:10px 0">
+        <span style="font-size:1rem;font-weight:600">修改密碼</span>
+        <span id="arrow-changepw" style="font-size:0.85rem;color:var(--text2);transition:transform .2s">▼</span>
+      </div>
+      <div id="section-changepw" style="display:none;margin-top:6px">
+        <div class="card" style="margin-bottom:0">
+          <div class="form-group" style="margin-bottom:10px">
+            <label>新密碼</label>
+            <input type="password" id="new-pw" placeholder="輸入新密碼" style="max-width:280px">
+          </div>
+          <div class="form-group" style="margin-bottom:10px">
+            <label>確認新密碼</label>
+            <input type="password" id="confirm-pw" placeholder="再次輸入新密碼" style="max-width:280px">
+          </div>
+          <button class="btn btn-primary" onclick="changePassword()">儲存新密碼</button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
+<div class="overlay" id="pw-overlay">
+  <div class="dialog-box" style="max-width:340px">
+    <div style="font-size:1.05rem;font-weight:600;margin-bottom:4px">管理員專區</div>
+    <div style="font-size:0.85rem;color:var(--text2);margin-bottom:1rem">請輸入密碼</div>
+    <input type="password" id="pw-input" placeholder="密碼" style="height:42px;padding:0 12px;border:0.5px solid var(--border2);border-radius:var(--radius);font-size:1rem;background:var(--bg);color:var(--text);outline:none;width:100%;margin-bottom:10px" onkeydown="if(event.key==='Enter')submitPw()">
+    <div id="pw-error" style="font-size:0.82rem;color:#A32D2D;min-height:16px;margin-bottom:10px"></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn" style="flex:1" onclick="closePwOverlay()">取消</button>
+      <button class="btn btn-primary" style="flex:1" onclick="submitPw()">進入</button>
+    </div>
+  </div>
+</div>
 <div id="toast" style="display:none;position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:12px 22px;border-radius:12px;font-size:0.95rem;z-index:400;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.25);transition:opacity .3s"></div>
 
 <div class="overlay" id="detail-modal" onclick="closeModal(event)">
@@ -284,13 +315,60 @@ async function apiFetch(p){const r=await fetch(API+'?'+new URLSearchParams(p));r
 async function apiPost(b){const r=await fetch(API,{method:'POST',body:JSON.stringify(b)});return r.json();}
 async function loadAll(){try{const d=await apiFetch({action:'getAll'});appData=d;}catch(e){console.error(e);}}
 
+let adminUnlocked=false;
 function switchTab(id){
+  if(id==='admin'&&!adminUnlocked){
+    pendingTab='admin';
+    document.getElementById('pw-input').value='';
+    document.getElementById('pw-error').textContent='';
+    document.getElementById('pw-overlay').classList.add('open');
+    return;
+  }
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['calendar','apply','admin'][i]===id));
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+id).classList.add('active');
   if(id==='calendar')renderCal();
   if(id==='apply')renderApplyForm();
   if(id==='admin')renderAdmin();
+}
+let pendingTab=null;
+function closePwOverlay(){
+  document.getElementById('pw-overlay').classList.remove('open');
+  pendingTab=null;
+}
+async function submitPw(){
+  const pw=document.getElementById('pw-input').value;
+  if(!pw){document.getElementById('pw-error').textContent='請輸入密碼';return;}
+  const btn=document.querySelector('#pw-overlay .btn-primary');
+  btn.disabled=true;btn.textContent='驗證中…';
+  try{
+    const res=await apiFetch({action:'verifyPassword',pw});
+    if(res.ok){
+      adminUnlocked=true;
+      document.getElementById('pw-overlay').classList.remove('open');
+      if(pendingTab)switchTab(pendingTab);
+      pendingTab=null;
+    }else{
+      document.getElementById('pw-error').textContent='密碼錯誤';
+    }
+  }catch(e){document.getElementById('pw-error').textContent='錯誤：'+e.message;}
+  btn.disabled=false;btn.textContent='進入';
+}
+async function changePassword(){
+  const np=document.getElementById('new-pw').value;
+  const cp=document.getElementById('confirm-pw').value;
+  if(!np){toast('請輸入新密碼');return;}
+  if(np!==cp){toast('兩次密碼不一致');return;}
+  if(np.length<4){toast('密碼至少 4 個字元');return;}
+  const res=await apiPost({action:'changePassword',pw:np});
+  if(res.ok){
+    toast('密碼已更新！');
+    document.getElementById('new-pw').value='';
+    document.getElementById('confirm-pw').value='';
+    toggleSection('section-changepw');
+  }else{
+    toast('更新失敗：'+(res.error||''));
+  }
 }
 
 function navCal(dir){calDate=new Date(calDate.getFullYear(),calDate.getMonth()+dir,1);renderCal();}
@@ -323,13 +401,13 @@ function renderCal(){
 function showDay(ds){
   const evs=appData.bookings.filter(b=>b.date===ds);if(!evs.length)return;
   document.getElementById('modal-title-text').textContent=ds.replace(/-/g,'/')+' 借用';
-  document.getElementById('modal-body').innerHTML=evs.map(b=>'<div class="booking-item"><div class="booking-meta"><strong>'+b.names.join('、')+'</strong><span class="badge badge-'+b.status+'">'+statusLabel(b.status)+'</span>'+(b.room?'<span class="tag tag-room">'+b.room+'</span>':'<span class="tag">未分配教室</span>')+'</div><div style="font-size:0.9rem;color:var(--text2)">'+hrLabel(b.start)+' — '+hrLabel(b.end)+'</div>'+(b.note?'<div style="font-size:0.9rem;margin-top:4px">'+b.note+'</div>':'')+'</div>').join('');
+  document.getElementById('modal-body').innerHTML=evs.map(b=>'<div class="booking-item"><div class="booking-meta"><strong>'+b.names.join('、')+'</strong><span class="badge badge-'+b.status+'">'+statusLabel(b.status)+'</span>'+(b.room?'<span class="tag tag-room">'+b.room+'</span>':'<span class="tag">待分配</span>')+'</div><div style="font-size:0.9rem;color:var(--text2)">'+hrLabel(b.start)+' — '+hrLabel(b.end)+'</div>'+(b.note?'<div style="font-size:0.9rem;margin-top:4px">'+b.note+'</div>':'')+'</div>').join('');
   document.getElementById('detail-modal').classList.add('open');
 }
 function showBooking(id){
   const b=appData.bookings.find(x=>x.id===id);if(!b)return;
   document.getElementById('modal-title-text').textContent='借用詳情';
-  document.getElementById('modal-body').innerHTML='<div style="display:flex;flex-direction:column;gap:10px;font-size:0.95rem"><div><span style="color:var(--text2)">培訓生：</span><strong>'+b.names.join('、')+'</strong></div><div><span style="color:var(--text2)">日期：</span>'+b.date+'</div><div><span style="color:var(--text2)">時段：</span>'+hrLabel(b.start)+' — '+hrLabel(b.end)+'</div><div><span style="color:var(--text2)">教室：</span>'+(b.room||'未分配教室')+'</div><div><span style="color:var(--text2)">狀態：</span><span class="badge badge-'+b.status+'">'+statusLabel(b.status)+'</span></div>'+(b.note?'<div><span style="color:var(--text2)">說明：</span>'+b.note+'</div>':'')+'</div>';
+  document.getElementById('modal-body').innerHTML='<div style="display:flex;flex-direction:column;gap:10px;font-size:0.95rem"><div><span style="color:var(--text2)">培訓生：</span><strong>'+b.names.join('、')+'</strong></div><div><span style="color:var(--text2)">日期：</span>'+b.date+'</div><div><span style="color:var(--text2)">時段：</span>'+hrLabel(b.start)+' — '+hrLabel(b.end)+'</div><div><span style="color:var(--text2)">教室：</span>'+(b.room||'待分配')+'</div><div><span style="color:var(--text2)">狀態：</span><span class="badge badge-'+b.status+'">'+statusLabel(b.status)+'</span></div>'+(b.note?'<div><span style="color:var(--text2)">說明：</span>'+b.note+'</div>':'')+'</div>';
   document.getElementById('detail-modal').classList.add('open');
 }
 function closeModal(e){if(!e||e.target===document.getElementById('detail-modal'))document.getElementById('detail-modal').classList.remove('open');}
@@ -514,7 +592,7 @@ function renderAdmin(){
     const locked=(b.status==='confirmed')&&!isEdit;
     const selStyle=locked?'height:34px;font-size:0.85rem;width:auto;opacity:0.4;cursor:not-allowed;background:var(--bg2)':'height:34px;font-size:0.85rem;width:auto';
     const selStyleTime=locked?'height:34px;font-size:0.85rem;width:80px;opacity:0.4;cursor:not-allowed;background:var(--bg2)':'height:34px;font-size:0.85rem;width:80px';
-    return'<div class="booking-item"><div class="booking-meta"><strong>'+b.date+' ｜ '+b.names.join('、')+'</strong><span class="badge badge-'+b.status+'">'+statusLabel(b.status)+'</span>'+(b.room?'<span class="tag tag-room">'+b.room+'</span>':'<span class="tag">未分配教室</span>')+'</div><div style="font-size:0.9rem;color:var(--text2);margin-bottom:8px">'+hrLabel(b.start)+' — '+hrLabel(b.end)+(b.note?' · '+b.note:'')+'</div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><select style="'+selStyle+'"'+(locked?' disabled':' onchange="adminUpdateRoom(\''+b.id+'\',this.value)"')+'><option value="">分配教室</option>'+roomOpts+'</select><select style="'+selStyleTime+'"'+(locked?' disabled':' onchange="adminUpdateTime(\''+b.id+'\',\'start\',+this.value)"')+'>'+sOpts+'</select><span style="font-size:0.9rem;color:var(--text2)">→</span><select style="'+selStyleTime+'"'+(locked?' disabled':' onchange="adminUpdateTime(\''+b.id+'\',\'end\',+this.value)"')+'>'+eOpts+'</select>'+(b.status==='pending'?'<button class="btn btn-sm btn-success" onclick="adminApprove(\''+b.id+'\')">✓ 確認</button><button class="btn btn-sm btn-danger" onclick="adminReject(\''+b.id+'\')">✗ 拒絕</button>':'<button class="btn btn-sm" style="border-color:#7a9cbf;color:#7a9cbf" onclick="toggleEdit(\''+b.id+'\')">'+( isEdit?'💾 儲存':'✏️ 修改')+'</button><button class="btn btn-sm" onclick="adminReset(\''+b.id+'\')">改為待審</button>')+'<button class="btn btn-sm btn-danger" onclick="adminDelete(\''+b.id+'\')">刪除</button></div>'+
+    return'<div class="booking-item"><div class="booking-meta"><strong>'+b.date+' ｜ '+b.names.join('、')+'</strong><span class="badge badge-'+b.status+'">'+statusLabel(b.status)+'</span>'+(b.room?'<span class="tag tag-room">'+b.room+'</span>':'<span class="tag">待分配</span>')+'</div><div style="font-size:0.9rem;color:var(--text2);margin-bottom:8px">'+hrLabel(b.start)+' — '+hrLabel(b.end)+(b.note?' · '+b.note:'')+'</div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><select style="'+selStyle+'"'+(locked?' disabled':' onchange="adminUpdateRoom(\''+b.id+'\',this.value)"')+'><option value="">分配教室</option>'+roomOpts+'</select><select style="'+selStyleTime+'"'+(locked?' disabled':' onchange="adminUpdateTime(\''+b.id+'\',\'start\',+this.value)"')+'>'+sOpts+'</select><span style="font-size:0.9rem;color:var(--text2)">→</span><select style="'+selStyleTime+'"'+(locked?' disabled':' onchange="adminUpdateTime(\''+b.id+'\',\'end\',+this.value)"')+'>'+eOpts+'</select>'+(b.status==='pending'?'<button class="btn btn-sm btn-success" onclick="adminApprove(\''+b.id+'\')">✓ 確認</button><button class="btn btn-sm btn-danger" onclick="adminReject(\''+b.id+'\')">✗ 拒絕</button>':'<button class="btn btn-sm" style="border-color:#7a9cbf;color:#7a9cbf" onclick="toggleEdit(\''+b.id+'\')">'+( isEdit?'💾 儲存':'✏️ 修改')+'</button><button class="btn btn-sm" onclick="adminReset(\''+b.id+'\')">改為待審</button>')+'<button class="btn btn-sm btn-danger" onclick="adminDelete(\''+b.id+'\')">刪除</button></div>'+
       '<div style="margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border)">'+
       '<div onclick="toggleSection(\'section-mmgmt-'+b.id+'\')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:2px 0;margin-bottom:2px">'+
       '<div style="font-size:0.82rem;color:var(--text2)">成員管理</div>'+
@@ -552,7 +630,7 @@ function loadMyBookings(){
   const t=today();
   const mine=appData.bookings.filter(b=>b.names.includes(name)&&b.date>=t&&b.status!=='rejected');
   if(!mine.length){el.innerHTML='<div style="font-size:0.9rem;color:var(--text2);padding:8px 0">目前沒有可取消的預約</div>';return;}
-  el.innerHTML=mine.map(b=>'<div class="booking-item" style="margin-bottom:8px"><div class="booking-meta"><span class="badge badge-'+b.status+'">'+statusLabel(b.status)+'</span><span class="tag">'+b.date+'</span>'+(b.room?'<span class="tag tag-room">'+b.room+'</span>':'<span class="tag">未分配教室</span>')+'</div><div style="font-size:0.9rem;color:var(--text2);margin-bottom:8px">'+hrLabel(b.start)+' — '+hrLabel(b.end)+(b.note?' · '+b.note:'')+'</div><div style="font-size:0.85rem;color:var(--text2);margin-bottom:8px">成員：'+b.names.join('、')+'</div><button class="btn btn-sm btn-danger" onclick="cancelMyBooking(\''+b.id+'\',\''+name+'\')">退出這筆預約</button></div>').join('');
+  el.innerHTML=mine.map(b=>'<div class="booking-item" style="margin-bottom:8px"><div class="booking-meta"><span class="badge badge-'+b.status+'">'+statusLabel(b.status)+'</span><span class="tag">'+b.date+'</span>'+(b.room?'<span class="tag tag-room">'+b.room+'</span>':'<span class="tag">待分配</span>')+'</div><div style="font-size:0.9rem;color:var(--text2);margin-bottom:8px">'+hrLabel(b.start)+' — '+hrLabel(b.end)+(b.note?' · '+b.note:'')+'</div><div style="font-size:0.85rem;color:var(--text2);margin-bottom:8px">成員：'+b.names.join('、')+'</div><button class="btn btn-sm btn-danger" onclick="cancelMyBooking(\''+b.id+'\',\''+name+'\')">退出這筆預約</button></div>').join('');
 }
 async function cancelMyBooking(id,name){
   const b=appData.bookings.find(x=>x.id===id);if(!b)return;
