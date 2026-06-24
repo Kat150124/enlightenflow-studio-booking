@@ -216,17 +216,18 @@ input.time-err{border-color:#E24B4A!important;background:#FCEBEB!important}
     </div>
     <div style="margin-top:1.5rem">
       <div onclick="toggleSection('section-sundays')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:10px 0;border-top:0.5px solid var(--border)">
-        <span style="font-size:1rem;font-weight:600">星期日開放日期</span>
+        <span style="font-size:1rem;font-weight:600">星期日開放設定</span>
         <span id="arrow-sundays" style="font-size:0.85rem;color:var(--text2);transition:transform .2s">▼</span>
       </div>
       <div id="section-sundays" style="display:none;margin-top:6px">
         <div class="card" style="margin-bottom:0">
-          <div style="font-size:0.85rem;color:var(--text2);margin-bottom:10px">星期日預設不開放，在此新增例外開放的日期</div>
-          <div id="sunday-list"></div>
-          <div class="add-row">
-            <input type="date" id="new-sunday" style="max-width:200px">
-            <button class="btn btn-sm btn-success" onclick="addOpenSunday()">＋</button>
+          <div style="font-size:0.85rem;color:var(--text2);margin-bottom:12px">點選星期日格子來開放或關閉，綠色為已開放</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <button class="btn btn-sm" onclick="navSundayCal(-1)">&#8592;</button>
+            <span id="sunday-cal-title" style="font-weight:600"></span>
+            <button class="btn btn-sm" onclick="navSundayCal(1)">&#8594;</button>
           </div>
+          <div id="sunday-cal"></div>
         </div>
       </div>
     </div>
@@ -321,6 +322,7 @@ function toggleSection(id){
   const open=el.style.display==='none';
   el.style.display=open?'block':'none';
   arrow.style.transform=open?'rotate(180deg)':'';
+  if(open&&id==='section-sundays')renderSundayCal();
 }
 
 const MIN_H=8,MAX_H=23,STEP=0.5;
@@ -514,6 +516,13 @@ function onDateChange(){
   showApplySections(true);
   const date=document.getElementById('apply-date').value;
   if(!date){document.getElementById('join-group').style.display='none';return;}
+  const todayStr=today();
+  if(date<todayStr){
+    toast('不能申請過去的日期');
+    document.getElementById('apply-date').value='';
+    document.getElementById('join-group').style.display='none';
+    return;
+  }
   // Check if Sunday and not in open list
   const dateObj=new Date(date+'T00:00:00');
   if(dateObj.getDay()===0){
@@ -665,14 +674,8 @@ function toggleEdit(id){
   renderAdmin();
 }
 function renderAdmin(){
-  // Render Sunday list
-  const sundayEl=document.getElementById('sunday-list');
-  if(sundayEl){
-    const openSundays=(appData.openSundays||[]).sort();
-    sundayEl.innerHTML=openSundays.length?
-      openSundays.map(d=>'<div class="list-item">'+d+'<button class="btn btn-sm btn-danger" onclick="removeOpenSunday(\''+d+'\')">刪</button></div>').join(''):
-      '<div style="font-size:0.9rem;color:var(--text2);padding:4px">尚無開放日期</div>';
-  }
+  // Render Sunday calendar if visible
+  if(document.getElementById('sunday-cal')) renderSundayCal();
   document.getElementById('member-list').innerHTML=appData.members.map(m=>'<div class="list-item">'+m+'<button class="btn btn-sm btn-danger" onclick="removeMember(\''+m+'\')">刪</button></div>').join('')||'<div style="font-size:0.9rem;color:var(--text2);padding:4px">尚無培訓生</div>';
   const ab=document.getElementById('admin-bookings');
   const t=today();
@@ -718,22 +721,70 @@ function renderAdmin(){
   ab.innerHTML+='<div style="margin-top:1rem"><div onclick="toggleSection(\'section-past\')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:10px 0;border-top:0.5px solid var(--border)"><span style="font-size:1rem;font-weight:600">過去預約紀錄 <span style="font-size:0.85rem;font-weight:400;color:var(--text2)">('+past.length+')</span></span><span id="arrow-past" style="font-size:0.85rem;color:var(--text2);transition:transform .2s">▼</span></div><div id="section-past" style="display:none;margin-top:6px">'+pastHtml+'</div></div>';
 }
 
+let sundayCalDate=new Date();
+sundayCalDate.setDate(1);
+
+function navSundayCal(dir){
+  sundayCalDate=new Date(sundayCalDate.getFullYear(),sundayCalDate.getMonth()+dir,1);
+  renderSundayCal();
+}
+
+function renderSundayCal(){
+  const y=sundayCalDate.getFullYear(),m=sundayCalDate.getMonth();
+  document.getElementById('sunday-cal-title').textContent=y+' 年 '+(m+1)+' 月';
+  const first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate();
+  const openSundays=appData.openSundays||[];
+  const t=today();
+  let html='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center">';
+  ['日','一','二','三','四','五','六'].forEach(d=>{
+    html+='<div style="font-size:0.75rem;color:var(--text2);padding:4px;font-weight:600">'+d+'</div>';
+  });
+  for(let i=0;i<first;i++) html+='<div></div>';
+  for(let dd=1;dd<=days;dd++){
+    const ds=y+'-'+pad(m+1)+'-'+pad(dd);
+    const dow=new Date(ds+'T00:00:00').getDay();
+    const isPast=ds<t;
+    if(dow===0){
+      const isOpen=openSundays.includes(ds);
+      const bg=isPast?(isOpen?'#c8e6c9':'#eee'):(isOpen?'var(--green-bg)':'var(--bg2)');
+      const color=isPast?'#aaa':(isOpen?'var(--green-text)':'var(--text2)');
+      const cursor=isPast?'default':'pointer';
+      html+='<div onclick="'+(isPast?'':'toggleSunday(\''+ds+'\')')+'" style="padding:6px 2px;border-radius:6px;background:'+bg+';color:'+color+';cursor:'+cursor+';font-size:0.85rem;font-weight:600;border:1.5px solid '+(isOpen?(isPast?'#a5d6a7':'#4a8a1a'):'transparent')+'">'+dd+'</div>';
+    } else {
+      html+='<div style="padding:6px 2px;font-size:0.85rem;color:var(--text3);opacity:0.4">'+dd+'</div>';
+    }
+  }
+  html+='</div>';
+  html+='<div style="margin-top:10px;display:flex;gap:10px;font-size:0.82rem;color:var(--text2)">'+
+    '<span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:12px;border-radius:3px;background:var(--green-bg);border:1px solid #4a8a1a;display:inline-block"></span>已開放</span>'+
+    '<span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:12px;border-radius:3px;background:var(--bg2);display:inline-block"></span>未開放</span>'+
+    '</div>';
+  document.getElementById('sunday-cal').innerHTML=html;
+}
+
+async function toggleSunday(date){
+  const openSundays=appData.openSundays||[];
+  if(openSundays.includes(date)){
+    await apiPost({action:'removeOpenSunday',date});
+    toast('已關閉 '+date);
+  } else {
+    await apiPost({action:'addOpenSunday',date});
+    toast('已開放 '+date);
+  }
+  await loadAll();
+  renderSundayCal();
+}
+
 async function addOpenSunday(){
-  const val=document.getElementById('new-sunday').value;
-  if(!val){toast('請選擇日期');return;}
-  const d=new Date(val+'T00:00:00');
-  if(d.getDay()!==0){toast('請選擇星期日');return;}
+  const val=document.getElementById('new-sunday')?document.getElementById('new-sunday').value:'';
+  if(!val) return;
   const res=await apiPost({action:'addOpenSunday',date:val});
   if(res.error){toast(res.error);return;}
-  document.getElementById('new-sunday').value='';
   await loadAll();renderAdmin();
-  toast('已新增開放日期');
 }
 async function removeOpenSunday(date){
-  const ok=await showConfirm('確定移除 '+date+' 的開放設定？');if(!ok)return;
   await apiPost({action:'removeOpenSunday',date});
   await loadAll();renderAdmin();
-  toast('已移除');
 }
 function loadMyBookings(){
   const name=document.getElementById('cancel-member').value;
