@@ -214,6 +214,22 @@ input.time-err{border-color:#E24B4A!important;background:#FCEBEB!important}
         </div>
       </div>
     </div>
+    <div style="margin-top:1.5rem">
+      <div onclick="toggleSection('section-sundays')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:10px 0;border-top:0.5px solid var(--border)">
+        <span style="font-size:1rem;font-weight:600">星期日開放日期</span>
+        <span id="arrow-sundays" style="font-size:0.85rem;color:var(--text2);transition:transform .2s">▼</span>
+      </div>
+      <div id="section-sundays" style="display:none;margin-top:6px">
+        <div class="card" style="margin-bottom:0">
+          <div style="font-size:0.85rem;color:var(--text2);margin-bottom:10px">星期日預設不開放，在此新增例外開放的日期</div>
+          <div id="sunday-list"></div>
+          <div class="add-row">
+            <input type="date" id="new-sunday" style="max-width:200px">
+            <button class="btn btn-sm btn-success" onclick="addOpenSunday()">＋</button>
+          </div>
+        </div>
+      </div>
+    </div>
     <div style="margin-top:1.5rem;padding-top:1rem;border-top:0.5px solid var(--border)">
       <button class="btn" style="border-color:#7a9cbf;color:#7a9cbf" onclick="openChangePw()">🔑 修改密碼</button>
     </div>
@@ -337,7 +353,7 @@ function switchTab(id,skipHash){
 }
 function closeAdminLock(){
   document.getElementById('admin-lock').style.display='none';
-  history.back();
+  switchTab('calendar',true);
 }
 async function submitPw(){
   const pw=document.getElementById('pw-input').value;
@@ -498,6 +514,17 @@ function onDateChange(){
   showApplySections(true);
   const date=document.getElementById('apply-date').value;
   if(!date){document.getElementById('join-group').style.display='none';return;}
+  // Check if Sunday and not in open list
+  const dateObj=new Date(date+'T00:00:00');
+  if(dateObj.getDay()===0){
+    const openSundays=appData.openSundays||[];
+    if(!openSundays.includes(date)){
+      toast('此星期日未開放租借');
+      document.getElementById('apply-date').value='';
+      document.getElementById('join-group').style.display='none';
+      return;
+    }
+  }
   const evs=appData.bookings.filter(b=>b.date===date&&b.status!=='rejected');
   if(!evs.length){document.getElementById('join-group').style.display='none';return;}
   document.getElementById('join-group').style.display='block';
@@ -638,6 +665,14 @@ function toggleEdit(id){
   renderAdmin();
 }
 function renderAdmin(){
+  // Render Sunday list
+  const sundayEl=document.getElementById('sunday-list');
+  if(sundayEl){
+    const openSundays=(appData.openSundays||[]).sort();
+    sundayEl.innerHTML=openSundays.length?
+      openSundays.map(d=>'<div class="list-item">'+d+'<button class="btn btn-sm btn-danger" onclick="removeOpenSunday(\''+d+'\')">刪</button></div>').join(''):
+      '<div style="font-size:0.9rem;color:var(--text2);padding:4px">尚無開放日期</div>';
+  }
   document.getElementById('member-list').innerHTML=appData.members.map(m=>'<div class="list-item">'+m+'<button class="btn btn-sm btn-danger" onclick="removeMember(\''+m+'\')">刪</button></div>').join('')||'<div style="font-size:0.9rem;color:var(--text2);padding:4px">尚無培訓生</div>';
   const ab=document.getElementById('admin-bookings');
   const t=today();
@@ -683,6 +718,23 @@ function renderAdmin(){
   ab.innerHTML+='<div style="margin-top:1rem"><div onclick="toggleSection(\'section-past\')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:10px 0;border-top:0.5px solid var(--border)"><span style="font-size:1rem;font-weight:600">過去預約紀錄 <span style="font-size:0.85rem;font-weight:400;color:var(--text2)">('+past.length+')</span></span><span id="arrow-past" style="font-size:0.85rem;color:var(--text2);transition:transform .2s">▼</span></div><div id="section-past" style="display:none;margin-top:6px">'+pastHtml+'</div></div>';
 }
 
+async function addOpenSunday(){
+  const val=document.getElementById('new-sunday').value;
+  if(!val){toast('請選擇日期');return;}
+  const d=new Date(val+'T00:00:00');
+  if(d.getDay()!==0){toast('請選擇星期日');return;}
+  const res=await apiPost({action:'addOpenSunday',date:val});
+  if(res.error){toast(res.error);return;}
+  document.getElementById('new-sunday').value='';
+  await loadAll();renderAdmin();
+  toast('已新增開放日期');
+}
+async function removeOpenSunday(date){
+  const ok=await showConfirm('確定移除 '+date+' 的開放設定？');if(!ok)return;
+  await apiPost({action:'removeOpenSunday',date});
+  await loadAll();renderAdmin();
+  toast('已移除');
+}
 function loadMyBookings(){
   const name=document.getElementById('cancel-member').value;
   const el=document.getElementById('my-bookings');
